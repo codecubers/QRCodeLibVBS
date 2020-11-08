@@ -69,7 +69,7 @@ Public Sub Main(ByVal args)
     Dim params
     Set params = GetParams(args)
     If params Is Nothing Then
-        Call WScript.Quit(-1)    
+        Call WScript.Quit(-1)
     End If
 
     Dim sbls
@@ -100,9 +100,9 @@ End Sub
 Private Function GetParams(ByVal args)
     Dim ks
     ks = Array("data", "out", "forecolor", "backcolor", "colordepth", "ecr", "scale", "filetype")
-    
+
     Dim params
-    Set params = CreateObject("Scripting.Dictionary")    
+    Set params = CreateObject("Scripting.Dictionary")
     Dim k, v
 
     For Each k In ks
@@ -122,7 +122,7 @@ Private Function GetParams(ByVal args)
         params("data") = ts.ReadAll()
         ts.Close
     End If
-    
+
     params("scale") = 5
     params("forecolor") = ColorCode.BLACK
     params("backcolor") = ColorCode.WHITE
@@ -1855,11 +1855,11 @@ End Class
 
 Class QuietZone_
     Private m_width
-    
+
     Private Sub Class_Initialize()
         m_width = QUIET_ZONE_MIN_WIDTH
     End Sub
-    
+
     Public Property Get Width()
         Width = m_width
     End Property
@@ -1867,7 +1867,7 @@ Class QuietZone_
         If Value < QUIET_ZONE_MIN_WIDTH Then
             Call Err.Raise(5)
         End If
-        
+
         m_width = Value
     End Property
 
@@ -2709,14 +2709,14 @@ Class Symbol
 
         Call dib.SaveToFile(filePath, adSaveCreateOverWrite)
     End Sub
-    
+
     Public Sub SaveSvg(ByVal filePath, ByVal moduleSize, ByVal foreRgb)
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
-    
+
         If Len(filePath) = 0 Then Call Err.Raise(5)
         If moduleSize < 2 Then Call Err.Raise(5)
         If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
-    
+
         Dim svg
         svg = GetSvg(moduleSize, foreRgb)
         Dim svgFile
@@ -2736,10 +2736,10 @@ Class Symbol
 
     Public Function GetSvg(ByVal moduleSize, ByVal foreRgb)
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
-    
+
         If moduleSize < 2 Then Call Err.Raise(5)
         If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
-    
+
         Dim moduleMatrix
         moduleMatrix = QuietZone.Place(GetModuleMatrix())
 
@@ -2748,12 +2748,12 @@ Class Symbol
 
         Dim imageHeight
         imageHeight = imageWidth
-    
+
         Dim img()
         ReDim img(imageHeight - 1)
-    
+
         Dim imgRow()
-        
+
         Dim r, c
         Dim i, j
         Dim v
@@ -2763,7 +2763,7 @@ Class Symbol
         Dim rowArray
         For Each rowArray In moduleMatrix
             ReDim imgRow(imageWidth - 1)
-            c = 0            
+            c = 0
             For Each v In rowArray
                 For j = 1 To moduleSize
                     imgRow(c) = v
@@ -2779,16 +2779,16 @@ Class Symbol
 
         Dim paths
         paths = Graphics.FindContours(img)
-    
+
         Dim buf
         Set buf = New List
-    
+
         Dim indent
         indent = String(11, " ")
 
         Dim pth
         Dim k
-    
+
         For Each pth In paths
             Call buf.Add(indent & "M ")
 
@@ -3568,7 +3568,7 @@ Class Point
         Dim ret
         Set ret = New Point
         Call ret.Init(x, y)
-    
+
         Set Clone = ret
     End Function
 
@@ -3736,7 +3736,7 @@ Class Graphics_
 
         Dim pths
         Set pths = New List
-    
+
         Dim st, dr
         Dim x, y
         Dim p
@@ -3776,7 +3776,7 @@ Class Graphics_
                                     Set p = p.Clone()
                                     p.y = p.y + 1
                                     Call pth.Add(p)
-                            
+
                                     dr = DIRECTION_LEFT
                                     Set p = p.Clone()
                                     p.x = p.x - 1
@@ -3791,7 +3791,7 @@ Class Graphics_
                                         p.y = p.y + 1
                                     Else
                                         Call pth.Add(p)
-                                
+
                                         dr = DIRECTION_LEFT
                                         Set p = p.Clone()
                                         p.x = p.x - 1
@@ -3800,7 +3800,7 @@ Class Graphics_
                                     Set p = p.Clone()
                                     p.y = p.y - 1
                                     Call pth.Add(p)
-                            
+
                                     dr = DIRECTION_RIGHT
                                     Set p = p.Clone()
                                     p.x = p.x + 1
@@ -3815,7 +3815,7 @@ Class Graphics_
                                         p.x = p.x - 1
                                     Else
                                         Call pth.Add(p)
-                                
+
                                         dr = DIRECTION_UP
                                         Set p = p.Clone()
                                         p.y = p.y - 1
@@ -3824,7 +3824,7 @@ Class Graphics_
                                     Set p = p.Clone()
                                     p.x = p.x + 1
                                     Call pth.Add(p)
-                            
+
                                     dr = DIRECTION_DOWN
                                     Set p = p.Clone()
                                     p.y = p.y + 1
@@ -3839,7 +3839,7 @@ Class Graphics_
                                         p.x = p.x + 1
                                     Else
                                         Call pth.Add(p)
-                                
+
                                         dr = DIRECTION_DOWN
                                         Set p = p.Clone()
                                         p.y = p.y + 1
@@ -3848,7 +3848,7 @@ Class Graphics_
                                     Set p = p.Clone()
                                     p.x = p.x - 1
                                     Call pth.Add(p)
-                            
+
                                     dr = DIRECTION_UP
                                     Set p = p.Clone()
                                     p.y = p.y - 1
