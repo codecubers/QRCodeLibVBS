@@ -3,16 +3,16 @@ Option Explicit
 Public Const MIN_VERSION = 1
 Public Const MAX_VERSION = 40
 
-Public Const ERRORCORRECTION_L = 0
-Public Const ERRORCORRECTION_M = 1
-Public Const ERRORCORRECTION_Q = 2
-Public Const ERRORCORRECTION_H = 3
+Public Const ECR_L = 0
+Public Const ECR_M = 1
+Public Const ECR_Q = 2
+Public Const ECR_H = 3
 
-Private Const ENCODINGMODE_UNKNOWN           = 0
-Private Const ENCODINGMODE_NUMERIC           = 1
-Private Const ENCODINGMODE_ALPHA_NUMERIC     = 2
-Private Const ENCODINGMODE_EIGHT_BIT_BYTE    = 3
-Private Const ENCODINGMODE_KANJI             = 4
+Private Const MODE_UNKNOWN       = 0
+Private Const MODE_NUMERIC       = 1
+Private Const MODE_ALPHA_NUMERIC = 2
+Private Const MODE_BYTE          = 3
+Private Const MODE_KANJI         = 4
 
 Private Const MODEINDICATOR_LENGTH = 4
 Private Const MODEINDICATOR_TERMINATOR_VALUE           = &H0
@@ -28,9 +28,16 @@ Private Const SYMBOLSEQUENCEINDICATOR_TOTAL_NUMBER_LENGTH = 4
 Private Const STRUCTUREDAPPEND_PARITY_DATA_LENGTH = 8
 Private Const STRUCTUREDAPPEND_HEADER_LENGTH      = 20
 
+Private Const QUIET_ZONE_MIN_WIDTH = 4
+
 Private Const adTypeBinary = 1
 Private Const adTypeText = 2
 Private Const adSaveCreateOverWrite = 2
+
+Private Const DIRECTION_UP = 0
+Private Const DIRECTION_DOWN = 1
+Private Const DIRECTION_LEFT = 2
+Private Const DIRECTION_RIGHT = 3
 
 Private AlignmentPattern:     Set AlignmentPattern = New AlignmentPattern_
 Private CharCountIndicator:   Set CharCountIndicator = New CharCountIndicator_
@@ -49,344 +56,149 @@ Private RSBlock:              Set RSBlock = New RSBlock_
 Private Separator:            Set Separator = New Separator_
 Private TimingPattern:        Set TimingPattern = New TimingPattern_
 Private VersionInfo:          Set VersionInfo = New VersionInfo_
+Private ColorCode:            Set ColorCode = New ColorCode_
+Private Graphics:             Set Graphics = New Graphics_
 
 
 Call Main(WScript.Arguments)
 
 
 Public Sub Main(ByVal args)
-    Const COLOR_BLACK = "#000000"
-    Const COLOR_WHITE = "#FFFFFF"
-
     If args.Count = 0 Then Exit Sub
 
-    Dim namedArgs
-    Set namedArgs = args.Named
-    Dim unNamedArgs
-    Set unNamedArgs = args.UnNamed
-
-    Dim fso
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Dim ts
-    Dim data
-    Dim inFile
-    Dim outFilename
-
-    Dim parentFolder
-    parentFolder = fso.getParentFolderName(WScript.ScriptFullName)
-
-    If unNamedArgs.Count > 0 Then
-        If fso.FileExists(unNamedArgs(0)) Then
-            Set inFile = fso.GetFile(unNamedArgs(0))
-            Set ts = inFile.OpenAsTextStream()
-            data = ts.ReadAll()
-            Call ts.Close
-            outFilename = fso.GetParentFolderName(infile.Path) _
-                & "\" & fso.GetBaseName(infile.Name) & ".bmp"
-        Else
-            Call WScript.Echo("file not found")
-            Call WScript.Quit(-1)
-        End If
-    End If
-
-    Dim foreColor
-    foreColor = COLOR_BLACK
-
-    Dim backColor
-    backColor = COLOR_WHITE
-
-    Dim moduleSize
-    moduleSize = 4
-
-    Dim colorDepth
-    colorDepth = 24
-
-    Dim ecLevel
-    ecLevel = ERRORCORRECTION_M
-
-    Dim temp
-
-    Dim re
-    Set re = CreateObject("VBScript.RegExp")
-    re.IgnoreCase = True
-
-    If namedArgs.Count > 0 Then
-        If namedArgs.Exists("data") Then
-            If Len(data) = 0 Then
-                data = namedArgs.Item("data")
-            End If
-        Else
-            If Len(data) = 0 Then
-                Call WScript.Echo("argument error ""data""")
-                Call WScript.Quit(-1)
-            End IF
-        End IF
-
-        If namedArgs.Exists("out") Then
-            outFilename = namedArgs.Item("out")
-        Else
-            If Len(outFilename) = 0 Then
-                Call WScript.Echo("argument error ""out""")
-                Call WScript.Quit(-1)
-            End If
-        End IF
-
-        re.Pattern = "^#[0-9A-Fa-f]{6}$"
-
-        If namedArgs.Exists("forecolor") Then
-            If re.Test(namedArgs.Item("forecolor")) Then
-                foreColor = namedArgs.Item("forecolor")
-            Else
-                Call WScript.Echo("argument error ""forecolor""")
-                Call WScript.Quit(-1)
-            End If
-        End If
-
-        If namedArgs.Exists("backcolor") Then
-            If re.Test(namedArgs.Item("backcolor")) Then
-                backColor = namedArgs.Item("backcolor")
-            Else
-                Call WScript.Echo("argument error ""backcolor""")
-                Call WScript.Quit(-1)
-            End If
-        End If
-
-        re.Pattern = "^\d{1,2}$"
-
-        If namedArgs.Exists("modulesize") Then
-            If re.Test(namedArgs.Item("modulesize")) Then
-                moduleSize = CLng(namedArgs.Item("modulesize"))
-            Else
-                Call WScript.Echo("argument error ""modulesize""")
-                Call WScript.Quit(-1)
-            End If
-
-            If moduleSize < 1 Or moduleSize > 31 Then
-                Call WScript.Echo("argument error ""modulesize""")
-                Call WScript.Quit(-1)
-            End If
-        End If
-
-        re.Pattern = "^\d{1,2}$"
-
-        If namedArgs.Exists("colordepth") Then
-            If re.Test(namedArgs.Item("colordepth")) Then
-                colorDepth = CLng(namedArgs.Item("colordepth"))
-            Else
-                Call WScript.Echo("argument error ""colordepth""")
-                Call WScript.Quit(-1)
-            End If
-
-            If colorDepth <> 1 And colorDepth <> 24 Then
-                Call WScript.Echo("argument error ""colordepth""")
-                Call WScript.Quit(-1)
-            End If
-        End If
-
-        re.Pattern = "^[LMQH]$"
-
-        If namedArgs.Exists("ec") Then
-            temp = namedArgs.Item("ec")
-
-            If re.Test(temp) Then
-                Select Case UCase(temp)
-                    Case "L"
-                        ecLevel = ERRORCORRECTION_L
-                    Case "M"
-                        ecLevel = ERRORCORRECTION_M
-                    Case "Q"
-                        ecLevel = ERRORCORRECTION_Q
-                    Case "H"
-                        ecLevel = ERRORCORRECTION_H
-                    Case Else
-                        Call WScript.Echo("argument error ""ec""")
-                        Call WScript.Quit(-1)
-                End Select
-            Else
-                Call WScript.Echo("argument error ""ec""")
-                Call WScript.Quit(-1)
-            End If
-        End If
+    Dim params
+    Set params = GetParams(args)
+    If params Is Nothing Then
+        Call WScript.Quit(-1)    
     End If
 
     Dim sbls
-    Set sbls = CreateSymbols(ecLevel, MAX_VERSION, False)
-    Call sbls.AppendText(data)
+    Set sbls = CreateSymbols(params("ecr"), MAX_VERSION, False)
+    Call sbls.AppendText(params("data"))
 
-    If colorDepth = 1 Then
-        Call sbls.Item(0).Save1bppDIB(outFilename, moduleSize, foreColor, backColor)
-    ElseIf colorDepth = 24 Then
-        Call sbls.Item(0).Save24bppDIB(outFilename, moduleSize, foreColor, backColor)
-    Else
-        Call Err.Raise(51)
-    End If
+    Select Case params("filetype")
+        Case "bmp"
+            Select Case params("colordepth")
+                Case 1
+                    Call sbls.Item(0).Save1bppDIB( _
+                        params("out"), params("scale"), params("forecolor"), params("backcolor"))
+                Case 24
+                    Call sbls.Item(0).Save24bppDIB( _
+                        params("out"), params("scale"), params("forecolor"), params("backcolor"))
+                Case Else
+                    Call Err.Raise(51)
+            End Select
+        Case "svg"
+            Call sbls.Item(0).SaveSvg(params("out"), params("scale"), params("forecolor"))
+        Case Else
+            Call Err.Raise(51)
+    End Select
 
     Call WScript.Quit(0)
 End Sub
 
-Private Function ToRGB(ByVal arg)
-    Dim re
-    Set re = CreateObject("VBScript.RegExp")
-    re.Pattern = "^#[0-9A-Fa-f]{6}$"
+Private Function GetParams(ByVal args)
+    Dim ks
+    ks = Array("data", "out", "forecolor", "backcolor", "colordepth", "ecr", "scale", "filetype")
+    
+    Dim params
+    Set params = CreateObject("Scripting.Dictionary")    
+    Dim k, v
 
-    If Not re.Test(arg) Then Call Err.Raise(5)
+    For Each k In ks
+        Call params.Add(k, Empty)
+    Next
 
-    Dim ret
-    ret = RGB(CInt("&h" & Mid(arg, 2, 2)), _
-              CInt("&h" & Mid(arg, 4, 2)), _
-              CInt("&h" & Mid(arg, 6, 2)))
+    Dim fso, ts
+    Set fso = CreateObject("Scripting.FileSystemObject")
 
-    ToRGB = ret
-End Function
+    If args.UnNamed.Count > 0 Then
+        If Not fso.FileExists(args.UnNamed(0)) Then
+            Call WScript.Echo("file not found")
+            Exit Function
+        End If
 
-Private Function Build1bppDIB( _
-  ByRef bitmapData, ByVal pictWidth, ByVal pictHeight, ByVal foreRGB, ByVal backRGB)
-    Dim bfh
-    Set bfh = New BITMAPFILEHEADER
-    With bfh
-        .bfType = &H4D42
-        .bfSize = 62 + bitmapData.Size
-        .bfReserved1 = 0
-        .bfReserved2 = 0
-        .bfOffBits = 62
-    End With
+        Set ts = fso.OpenTextFile(args.UnNamed(0))
+        params("data") = ts.ReadAll()
+        ts.Close
+    End If
+    
+    params("scale") = 5
+    params("forecolor") = ColorCode.BLACK
+    params("backcolor") = ColorCode.WHITE
+    params("colordepth") = 24
+    params("ecr") = "M"
+    params("filetype") = "bmp"
 
-    Dim bih
-    Set bih = New BITMAPINFOHEADER
-    With bih
-        .biSize = 40
-        .biWidth = pictWidth
-        .biHeight = pictHeight
-        .biPlanes = 1
-        .biBitCount = 1
-        .biCompression = 0
-        .biSizeImage = 0
-        .biXPelsPerMeter = 3780
-        .biYPelsPerMeter = 3780
-        .biClrUsed = 0
-        .biClrImportant = 0
-    End With
+    For Each k In ks
+        If args.Named.Exists(k) Then
+            v = args.Named.Item(k)
+            If Len(v) = 0 Then
+                Call WScript.Echo("argument error '" & k  & "'")
+                Exit Function
+            End If
+            If IsNumeric(v) Then
+                v = CLng(v)
+            End If
+            params(k) = v
+        End IF
+    Next
 
-    Dim palette(1)
-    Set palette(0) = New RGBQUAD
-    Set palette(1) = New RGBQUAD
+    If Len(params("out")) = 0 Then
+        Call WScript.Echo("argument error 'out'")
+        Exit Function
+    End If
 
-    With palette(0)
-        .rgbBlue = (foreRGB And &HFF0000) \ 2 ^ 16
-        .rgbGreen = (foreRGB And &HFF00&) \ 2 ^ 8
-        .rgbRed = foreRGB And &HFF&
-        .rgbReserved = 0
-    End With
+    If params("colordepth")  <> 1 And params("colordepth") <> 24 Then
+        Call WScript.Echo("argument error 'colordepth'")
+        Exit Function
+    End If
 
-    With palette(1)
-        .rgbBlue = (backRGB And &HFF0000) \ 2 ^ 16
-        .rgbGreen = (backRGB And &HFF00&) \ 2 ^ 8
-        .rgbRed = backRGB And &HFF&
-        .rgbReserved = 0
-    End With
+    If Not ColorCode.IsWebColor(params("forecolor")) Then
+        Call WScript.Echo("argument error 'forecolor'")
+        Exit Function
+    End If
 
-    Dim ret
-    Set ret = New BinaryWriter
+    If Not ColorCode.IsWebColor(params("backcolor")) Then
+        Call WScript.Echo("argument error 'backcolor'")
+        Exit Function
+    End If
 
-    With bfh
-        Call ret.Append(.bfType)
-        Call ret.Append(.bfSize)
-        Call ret.Append(.bfReserved1)
-        Call ret.Append(.bfReserved2)
-        Call ret.Append(.bfOffBits)
-    End With
+    If Not IsNumeric(params("scale")) Then
+        Call WScript.Echo("argument error 'scale'")
+        Exit Function
+    End If
 
-    With bih
-        Call ret.Append(.biSize)
-        Call ret.Append(.biWidth)
-        Call ret.Append(.biHeight)
-        Call ret.Append(.biPlanes)
-        Call ret.Append(.biBitCount)
-        Call ret.Append(.biCompression)
-        Call ret.Append(.biSizeImage)
-        Call ret.Append(.biXPelsPerMeter)
-        Call ret.Append(.biYPelsPerMeter)
-        Call ret.Append(.biClrUsed)
-        Call ret.Append(.biClrImportant)
-    End With
+    If params("scale") < 2 Then
+        Call WScript.Echo("argument error 'scale'")
+        Exit Function
+    End If
 
-    With palette(0)
-        Call ret.Append(.rgbBlue)
-        Call ret.Append(.rgbGreen)
-        Call ret.Append(.rgbRed)
-        Call ret.Append(.rgbReserved)
-    End With
+    Select Case UCase(params("ecr"))
+        Case "L"
+            v = ECR_L
+        Case "M"
+            v = ECR_M
+        Case "Q"
+            v = ECR_Q
+        Case "H"
+            v = ECR_H
+        Case Else
+            Call WScript.Echo("argument error 'ecr'")
+            Exit Function
+    End Select
+    params("ecr") = v
 
-    With palette(1)
-        Call ret.Append(.rgbBlue)
-        Call ret.Append(.rgbGreen)
-        Call ret.Append(.rgbRed)
-        Call ret.Append(.rgbReserved)
-    End With
+    params("filetype") = LCase(fso.GetExtensionName(params("out")))
+    Select Case params("filetype")
+        Case "bmp", "svg"
+            ' NOP
+        Case Else
+            Call WScript.Echo("argument error 'out'")
+            Exit Function
+    End Select
 
-    Call bitmapData.CopyTo(ret)
-
-    Set Build1bppDIB = ret
-End Function
-
-Private Function Build24bppDIB( _
-  ByRef bitmapData, ByVal pictWidth, ByVal pictHeight)
-    Dim bfh
-    Set bfh = New BITMAPFILEHEADER
-
-    With bfh
-        .bfType = &H4D42
-        .bfSize = 54 + bitmapData.Size
-        .bfReserved1 = 0
-        .bfReserved2 = 0
-        .bfOffBits = 54
-    End With
-
-    Dim bih
-    Set bih = New BITMAPINFOHEADER
-
-    With bih
-        .biSize = 40
-        .biWidth = pictWidth
-        .biHeight = pictHeight
-        .biPlanes = 1
-        .biBitCount = 24
-        .biCompression = 0
-        .biSizeImage = 0
-        .biXPelsPerMeter = 3780
-        .biYPelsPerMeter = 3780
-        .biClrUsed = 0
-        .biClrImportant = 0
-    End With
-
-    Dim ret
-    Set ret = New BinaryWriter
-
-    With bfh
-        Call ret.Append(.bfType)
-        Call ret.Append(.bfSize)
-        Call ret.Append(.bfReserved1)
-        Call ret.Append(.bfReserved2)
-        Call ret.Append(.bfOffBits)
-    End With
-
-    With bih
-        Call ret.Append(.biSize)
-        Call ret.Append(.biWidth)
-        Call ret.Append(.biHeight)
-        Call ret.Append(.biPlanes)
-        Call ret.Append(.biBitCount)
-        Call ret.Append(.biCompression)
-        Call ret.Append(.biSizeImage)
-        Call ret.Append(.biXPelsPerMeter)
-        Call ret.Append(.biYPelsPerMeter)
-        Call ret.Append(.biClrUsed)
-        Call ret.Append(.biClrImportant)
-    End With
-
-    Call bitmapData.CopyTo(ret)
-
-    Set Build24bppDIB = ret
+    Set GetParams = params
 End Function
 
 Public Function CreateSymbols( _
@@ -402,13 +214,13 @@ Private Function CreateEncoder(ByVal encMode)
     Dim ret
 
     Select Case encMode
-        Case ENCODINGMODE_NUMERIC
+        Case MODE_NUMERIC
             Set ret = New NumericEncoder
-        Case ENCODINGMODE_ALPHA_NUMERIC
+        Case MODE_ALPHA_NUMERIC
             Set ret = New AlphanumericEncoder
-        Case ENCODINGMODE_EIGHT_BIT_BYTE
+        Case MODE_BYTE
             Set ret = New ByteEncoder
-        Case ENCODINGMODE_KANJI
+        Case MODE_KANJI
             Set ret = New KanjiEncoder
         Case Else
             Call Err.Raise(5)
@@ -420,53 +232,53 @@ End Function
 
 Class AlignmentPattern_
 
-    Private m_centerPosArrays(40)
+    Private m_lst(40)
 
     Private Sub Class_Initialize()
-        m_centerPosArrays(2)  = Array(6, 18)
-        m_centerPosArrays(3)  = Array(6, 22)
-        m_centerPosArrays(4)  = Array(6, 26)
-        m_centerPosArrays(5)  = Array(6, 30)
-        m_centerPosArrays(6)  = Array(6, 34)
-        m_centerPosArrays(7)  = Array(6, 22, 38)
-        m_centerPosArrays(8)  = Array(6, 24, 42)
-        m_centerPosArrays(9)  = Array(6, 26, 46)
-        m_centerPosArrays(10) = Array(6, 28, 50)
-        m_centerPosArrays(11) = Array(6, 30, 54)
-        m_centerPosArrays(12) = Array(6, 32, 58)
-        m_centerPosArrays(13) = Array(6, 34, 62)
-        m_centerPosArrays(14) = Array(6, 26, 46, 66)
-        m_centerPosArrays(15) = Array(6, 26, 48, 70)
-        m_centerPosArrays(16) = Array(6, 26, 50, 74)
-        m_centerPosArrays(17) = Array(6, 30, 54, 78)
-        m_centerPosArrays(18) = Array(6, 30, 56, 82)
-        m_centerPosArrays(19) = Array(6, 30, 58, 86)
-        m_centerPosArrays(20) = Array(6, 34, 62, 90)
-        m_centerPosArrays(21) = Array(6, 28, 50, 72, 94)
-        m_centerPosArrays(22) = Array(6, 26, 50, 74, 98)
-        m_centerPosArrays(23) = Array(6, 30, 54, 78, 102)
-        m_centerPosArrays(24) = Array(6, 28, 54, 80, 106)
-        m_centerPosArrays(25) = Array(6, 32, 58, 84, 110)
-        m_centerPosArrays(26) = Array(6, 30, 58, 86, 114)
-        m_centerPosArrays(27) = Array(6, 34, 62, 90, 118)
-        m_centerPosArrays(28) = Array(6, 26, 50, 74, 98, 122)
-        m_centerPosArrays(29) = Array(6, 30, 54, 78, 102, 126)
-        m_centerPosArrays(30) = Array(6, 26, 52, 78, 104, 130)
-        m_centerPosArrays(31) = Array(6, 30, 56, 82, 108, 134)
-        m_centerPosArrays(32) = Array(6, 34, 60, 86, 112, 138)
-        m_centerPosArrays(33) = Array(6, 30, 58, 86, 114, 142)
-        m_centerPosArrays(34) = Array(6, 34, 62, 90, 118, 146)
-        m_centerPosArrays(35) = Array(6, 30, 54, 78, 102, 126, 150)
-        m_centerPosArrays(36) = Array(6, 24, 50, 76, 102, 128, 154)
-        m_centerPosArrays(37) = Array(6, 28, 54, 80, 106, 132, 158)
-        m_centerPosArrays(38) = Array(6, 32, 58, 84, 110, 136, 162)
-        m_centerPosArrays(39) = Array(6, 26, 54, 82, 110, 138, 166)
-        m_centerPosArrays(40) = Array(6, 30, 58, 86, 114, 142, 170)
+        m_lst(2)  = Array(6, 18)
+        m_lst(3)  = Array(6, 22)
+        m_lst(4)  = Array(6, 26)
+        m_lst(5)  = Array(6, 30)
+        m_lst(6)  = Array(6, 34)
+        m_lst(7)  = Array(6, 22, 38)
+        m_lst(8)  = Array(6, 24, 42)
+        m_lst(9)  = Array(6, 26, 46)
+        m_lst(10) = Array(6, 28, 50)
+        m_lst(11) = Array(6, 30, 54)
+        m_lst(12) = Array(6, 32, 58)
+        m_lst(13) = Array(6, 34, 62)
+        m_lst(14) = Array(6, 26, 46, 66)
+        m_lst(15) = Array(6, 26, 48, 70)
+        m_lst(16) = Array(6, 26, 50, 74)
+        m_lst(17) = Array(6, 30, 54, 78)
+        m_lst(18) = Array(6, 30, 56, 82)
+        m_lst(19) = Array(6, 30, 58, 86)
+        m_lst(20) = Array(6, 34, 62, 90)
+        m_lst(21) = Array(6, 28, 50, 72, 94)
+        m_lst(22) = Array(6, 26, 50, 74, 98)
+        m_lst(23) = Array(6, 30, 54, 78, 102)
+        m_lst(24) = Array(6, 28, 54, 80, 106)
+        m_lst(25) = Array(6, 32, 58, 84, 110)
+        m_lst(26) = Array(6, 30, 58, 86, 114)
+        m_lst(27) = Array(6, 34, 62, 90, 118)
+        m_lst(28) = Array(6, 26, 50, 74, 98, 122)
+        m_lst(29) = Array(6, 30, 54, 78, 102, 126)
+        m_lst(30) = Array(6, 26, 52, 78, 104, 130)
+        m_lst(31) = Array(6, 30, 56, 82, 108, 134)
+        m_lst(32) = Array(6, 34, 60, 86, 112, 138)
+        m_lst(33) = Array(6, 30, 58, 86, 114, 142)
+        m_lst(34) = Array(6, 34, 62, 90, 118, 146)
+        m_lst(35) = Array(6, 30, 54, 78, 102, 126, 150)
+        m_lst(36) = Array(6, 24, 50, 76, 102, 128, 154)
+        m_lst(37) = Array(6, 28, 54, 80, 106, 132, 158)
+        m_lst(38) = Array(6, 32, 58, 84, 110, 136, 162)
+        m_lst(39) = Array(6, 26, 54, 82, 110, 138, 166)
+        m_lst(40) = Array(6, 30, 58, 86, 114, 142, 170)
     End Sub
 
     Public Sub Place(ByVal ver, ByRef moduleMatrix())
         Dim centerArray
-        centerArray = m_centerPosArrays(ver)
+        centerArray = m_lst(ver)
 
         Dim maxIndex
         maxIndex = UBound(centerArray)
@@ -536,7 +348,7 @@ Class AlphanumericEncoder
     End Property
 
     Public Property Get EncodingMode()
-        EncodingMode = ENCODINGMODE_ALPHA_NUMERIC
+        EncodingMode = MODE_ALPHA_NUMERIC
     End Property
 
     Public Property Get ModeIndicator()
@@ -823,7 +635,6 @@ Class BitSequence
     Public Sub Append(ByVal data, ByVal bitLength)
         Dim remainingLength
         remainingLength = bitLength
-
         Dim remainingData
         remainingData = data
 
@@ -839,7 +650,6 @@ Class BitSequence
 
             If m_space < remainingLength Then
                 temp = CByte(temp Or remainingData \ (2 ^ (remainingLength - m_space)))
-
                 remainingData = remainingData And ((2 ^ (remainingLength - m_space)) - 1)
 
                 m_bitCounter = m_bitCounter + m_space
@@ -899,7 +709,7 @@ Class ByteEncoder
     End Property
 
     Public Property Get EncodingMode()
-        EncodingMode = ENCODINGMODE_EIGHT_BIT_BYTE
+        EncodingMode = MODE_BYTE
     End Property
 
     Public Property Get ModeIndicator()
@@ -977,39 +787,39 @@ Class CharCountIndicator_
     Public Function GetLength(ByVal ver, ByVal encMode)
         If 1 <= ver And ver <= 9 Then
             Select Case encMode
-                Case ENCODINGMODE_NUMERIC
+                Case MODE_NUMERIC
                     GetLength = 10
-                Case ENCODINGMODE_ALPHA_NUMERIC
+                Case MODE_ALPHA_NUMERIC
                     GetLength = 9
-                Case ENCODINGMODE_EIGHT_BIT_BYTE
+                Case MODE_BYTE
                     GetLength = 8
-                Case ENCODINGMODE_KANJI
+                Case MODE_KANJI
                     GetLength = 8
                 Case Else
                     Call Err.Raise(5)
             End Select
         ElseIf 10 <= ver And ver <= 26 Then
             Select Case encMode
-                Case ENCODINGMODE_NUMERIC
+                Case MODE_NUMERIC
                     GetLength = 12
-                Case ENCODINGMODE_ALPHA_NUMERIC
+                Case MODE_ALPHA_NUMERIC
                     GetLength = 11
-                Case ENCODINGMODE_EIGHT_BIT_BYTE
+                Case MODE_BYTE
                     GetLength = 16
-                Case ENCODINGMODE_KANJI
+                Case MODE_KANJI
                     GetLength = 10
                 Case Else
                     Call Err.Raise(5)
             End Select
         ElseIf 27 <= ver And ver <= 40 Then
             Select Case encMode
-                Case ENCODINGMODE_NUMERIC
+                Case MODE_NUMERIC
                     GetLength = 14
-                Case ENCODINGMODE_ALPHA_NUMERIC
+                Case MODE_ALPHA_NUMERIC
                     GetLength = 13
-                Case ENCODINGMODE_EIGHT_BIT_BYTE
+                Case MODE_BYTE
                     GetLength = 16
-                Case ENCODINGMODE_KANJI
+                Case MODE_KANJI
                     GetLength = 12
                 Case Else
                     Call Err.Raise(5)
@@ -1241,13 +1051,13 @@ Class FormatInfo_
         Dim indicator
 
         Select Case ecLevel
-            Case ERRORCORRECTION_L
+            Case ECR_L
                 indicator = 1
-            Case ERRORCORRECTION_M
+            Case ECR_M
                 indicator = 0
-            Case ERRORCORRECTION_Q
+            Case ECR_Q
                 indicator = 3
-            Case ERRORCORRECTION_H
+            Case ECR_H
                 indicator = 2
             Case Else
                 Call Err.Raise(5)
@@ -1377,7 +1187,7 @@ Class KanjiEncoder
     End Property
 
     Public Property Get EncodingMode()
-        EncodingMode = ENCODINGMODE_KANJI
+        EncodingMode = MODE_KANJI
     End Property
 
     Public Property Get ModeIndicator()
@@ -1877,20 +1687,19 @@ Class MaskingPenaltyScore_
         Dim ret
         ret = Array()
 
-        Dim s, e
-        Dim i
+        Dim s, i
 
-        For i = 4 To UBound(arg) - 4
-            If arg(i) > 0 And arg(i - 1) <= 0 Then
-                s = i
-            End If
+        For i = 1 To UBound(arg) - 1
+            If arg(i) > 0 Then
+                If arg(i - 1) <= 0 Then
+                    s = i
+                End If
 
-            If arg(i) > 0 And arg(i + 1) <= 0 Then
-                e = i
-
-                If (e + 1 - s) Mod 3 = 0 Then
-                    ReDim Preserve ret(UBound(ret) + 1)
-                    ret(UBound(ret)) = Array(s, e)
+                If arg(i + 1) <= 0 Then
+                    If (i + 1 - s) Mod 3 = 0 Then
+                        ReDim Preserve ret(UBound(ret) + 1)
+                        ret(UBound(ret)) = Array(s, i)
+                    End If
                 End If
             End If
         Next
@@ -1974,7 +1783,7 @@ Class NumericEncoder
     End Property
 
     Public Property Get EncodingMode()
-        EncodingMode = ENCODINGMODE_NUMERIC
+        EncodingMode = MODE_NUMERIC
     End Property
 
     Public Property Get ModeIndicator()
@@ -2045,12 +1854,26 @@ End Class
 
 
 Class QuietZone_
+    Private m_width
+    
+    Private Sub Class_Initialize()
+        m_width = QUIET_ZONE_MIN_WIDTH
+    End Sub
+    
+    Public Property Get Width()
+        Width = m_width
+    End Property
+    Public Property Let Width(ByVal Value)
+        If Value < QUIET_ZONE_MIN_WIDTH Then
+            Call Err.Raise(5)
+        End If
+        
+        m_width = Value
+    End Property
 
     Public Function Place(ByRef moduleMatrix())
-        Const QUIET_ZONE_WIDTH = 4
-
         Dim ret()
-        ReDim ret(UBound(moduleMatrix) + QUIET_ZONE_WIDTH * 2)
+        ReDim ret(UBound(moduleMatrix) + Width * 2)
 
         Dim i
         Dim cols()
@@ -2064,7 +1887,7 @@ Class QuietZone_
 
         For r = 0 To UBound(moduleMatrix)
             For c = 0 To UBound(moduleMatrix(r))
-                ret(r + QUIET_ZONE_WIDTH)(c + QUIET_ZONE_WIDTH) = moduleMatrix(r)(c)
+                ret(r + Width)(c + Width) = moduleMatrix(r)(c)
             Next
         Next
 
@@ -2229,7 +2052,7 @@ Class Symbol
         m_position = parentObj.Count
 
         Set m_currEncoder = Nothing
-        m_currEncodingMode = ENCODINGMODE_UNKNOWN
+        m_currEncodingMode = MODE_UNKNOWN
         m_currVersion = parentObj.MinVersion
 
         m_dataBitCapacity = 8 * DataCodeword.GetTotalNumber( _
@@ -2237,10 +2060,10 @@ Class Symbol
 
         m_dataBitCounter = 0
 
-        Call m_segmentCounter.Add(ENCODINGMODE_NUMERIC, 0)
-        Call m_segmentCounter.Add(ENCODINGMODE_ALPHA_NUMERIC, 0)
-        Call m_segmentCounter.Add(ENCODINGMODE_EIGHT_BIT_BYTE, 0)
-        Call m_segmentCounter.Add(ENCODINGMODE_KANJI, 0)
+        Call m_segmentCounter.Add(MODE_NUMERIC, 0)
+        Call m_segmentCounter.Add(MODE_ALPHA_NUMERIC, 0)
+        Call m_segmentCounter.Add(MODE_BYTE, 0)
+        Call m_segmentCounter.Add(MODE_KANJI, 0)
 
         If parentObj.StructuredAppendAllowed Then
             m_dataBitCapacity = m_dataBitCapacity - STRUCTUREDAPPEND_HEADER_LENGTH
@@ -2707,13 +2530,11 @@ Class Symbol
         Next
     End Sub
 
-    Public Function Get1bppDIB(ByVal moduleSize, ByVal foreColor, ByVal backColor)
-        If Not (1 <= moduleSize And moduleSize <= 31) Then Call Err.Raise(5)
-
-        Dim foreRGB
-        foreRGB = ToRGB(foreColor)
-        Dim backRGB
-        backRGB = ToRGB(backColor)
+    Private Function GetBitmap1bpp(ByVal moduleSize, ByVal foreColor, ByVal backColor)
+        Dim foreRgb
+        foreRgb = ColorCode.ToRGB(foreColor)
+        Dim backRgb
+        backRgb = ColorCode.ToRGB(backColor)
 
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
 
@@ -2769,7 +2590,6 @@ Class Symbol
                 Else
                     pixelColor = (2 ^ moduleSize) - 1
                 End If
-
                 Call bs.Append(pixelColor, moduleSize)
             Next
 
@@ -2784,18 +2604,16 @@ Class Symbol
         Next
 
         Dim ret
-        Set ret = Build1bppDIB(bitmapData, pictWidth, pictHeight, foreRGB, backRGB)
+        Set ret = Graphics.Build1bppDIB(bitmapData, pictWidth, pictHeight, foreRgb, backRgb)
 
-        Set Get1bppDIB = ret
+        Set GetBitmap1bpp = ret
     End Function
 
-    Public Function Get24bppDIB(ByVal moduleSize, ByVal foreColor, ByVal backColor)
-        If moduleSize < 1 Then Call Err.Raise(5)
-
-        Dim foreRGB
-        foreRGB = ToRGB(foreColor)
-        Dim backRGB
-        backRGB = ToRGB(backColor)
+    Private Function GetBitmap24bpp(ByVal moduleSize, ByVal foreColor, ByVal backColor)
+        Dim foreRgb
+        foreRgb = ColorCode.ToRGB(foreColor)
+        Dim backRgb
+        backRgb = ColorCode.ToRGB(backColor)
 
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
 
@@ -2839,9 +2657,9 @@ Class Symbol
 
             For Each v In moduleMatrix(r)
                 If v > 0 Then
-                    colorRGB = foreRGB
+                    colorRGB = foreRgb
                 Else
-                    colorRGB = backRGB
+                    colorRGB = backRgb
                 End If
 
                 For i = 1 To moduleSize
@@ -2863,34 +2681,137 @@ Class Symbol
         Next
 
         Dim ret
-        Set ret = Build24bppDIB(bitmapData, pictWidth, pictHeight)
+        Set ret = Graphics.Build24bppDIB(bitmapData, pictWidth, pictHeight)
 
-        Set Get24bppDIB = ret
+        Set GetBitmap24bpp = ret
     End Function
 
-    Public Sub Save1bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRGB, ByVal backRGB)
+    Public Sub Save1bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRgb, ByVal backRgb)
         If Len(filePath) = 0 Then Call Err.Raise(5)
         If Not(0 < moduleSize And moduleSize < 32) Then Call Err.Raise(5)
 
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
 
         Dim dib
-        Set dib = Get1bppDIB(moduleSize, foreRGB, backRGB)
+        Set dib = GetBitmap1bpp(moduleSize, foreRgb, backRgb)
 
         Call dib.SaveToFile(filePath, adSaveCreateOverWrite)
     End Sub
 
-    Public Sub Save24bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRGB, ByVal backRGB)
+    Public Sub Save24bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRgb, ByVal backRgb)
         If Len(filePath) = 0 Then Call Err.Raise(5)
         If moduleSize < 1 Then Call Err.Raise(5)
 
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
 
         Dim dib
-        Set dib = Get24bppDIB(moduleSize, foreRGB, backRGB)
+        Set dib = GetBitmap24bpp(moduleSize, foreRgb, backRgb)
 
         Call dib.SaveToFile(filePath, adSaveCreateOverWrite)
     End Sub
+    
+    Public Sub SaveSvg(ByVal filePath, ByVal moduleSize, ByVal foreRgb)
+        If m_dataBitCounter = 0 Then Call Err.Raise(51)
+    
+        If Len(filePath) = 0 Then Call Err.Raise(5)
+        If moduleSize < 2 Then Call Err.Raise(5)
+        If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
+    
+        Dim svg
+        svg = GetSvg(moduleSize, foreRgb)
+        Dim svgFile
+        svgFile = _
+            "<?xml version='1.0' encoding='UTF-8' standalone='no'?>" & vbNewLine & _
+            "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 20010904//EN'" & vbNewLine & _
+            "    'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'>" & vbNewLine & _
+            svg
+
+        Dim fso
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        Dim ts
+        Set ts = fso.CreateTextFile(filePath, True)
+        Call ts.WriteLine(svgFile)
+        ts.Close
+    End Sub
+
+    Public Function GetSvg(ByVal moduleSize, ByVal foreRgb)
+        If m_dataBitCounter = 0 Then Call Err.Raise(51)
+    
+        If moduleSize < 2 Then Call Err.Raise(5)
+        If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
+    
+        Dim moduleMatrix
+        moduleMatrix = QuietZone.Place(GetModuleMatrix())
+
+        Dim imageWidth
+        imageWidth = (UBound(moduleMatrix) + 1) * moduleSize
+
+        Dim imageHeight
+        imageHeight = imageWidth
+    
+        Dim img()
+        ReDim img(imageHeight - 1)
+    
+        Dim imgRow()
+        
+        Dim r, c
+        Dim i, j
+        Dim v
+        Dim vl
+
+        r = 0
+        Dim rowArray
+        For Each rowArray In moduleMatrix
+            ReDim imgRow(imageWidth - 1)
+            c = 0            
+            For Each v In rowArray
+                For j = 1 To moduleSize
+                    imgRow(c) = v
+                    c = c + 1
+                Next
+            Next
+
+            For i = 1 To moduleSize
+                img(r) = imgRow
+                r = r + 1
+            Next
+        Next
+
+        Dim paths
+        paths = Graphics.FindContours(img)
+    
+        Dim buf
+        Set buf = New List
+    
+        Dim indent
+        indent = String(11, " ")
+
+        Dim pth
+        Dim k
+    
+        For Each pth In paths
+            Call buf.Add(indent & "M ")
+
+            For k = 0 To UBound(pth)
+                Call buf.Add(CStr(pth(k).x) & "," & CStr(pth(k).y) & " ")
+            Next
+            Call buf.Add("Z" & vbNewLine)
+        Next
+
+        Dim data
+        data = Trim(Join(buf.Items(), ""))
+        data = Left(data, Len(data) - Len(vbNewLine))
+        Dim svg
+        svg = _
+            "<svg xmlns='http://www.w3.org/2000/svg'" & vbNewLine & _
+            "    width='" & CStr(imageWidth) & "' height='" & CStr(imageHeight) & "' viewBox='0 0 " & CStr(imageWidth) & " " & CStr(imageHeight) & "'>" & vbNewLine & _
+            "    <path fill='" & foreRgb & "' stroke='" & foreRgb & "' stroke-width='1'" & vbNewLine & _
+            "        d='" & data & "'" & vbNewLine & _
+            "    />" & vbNewLine & _
+            "</svg>"
+
+        GetSvg = svg
+    End Function
 
 End Class
 
@@ -2921,10 +2842,10 @@ Class Symbols
 
         Set m_items = New List
 
-        Set m_encNum = CreateEncoder(ENCODINGMODE_NUMERIC)
-        Set m_encAlpha = CreateEncoder(ENCODINGMODE_ALPHA_NUMERIC)
-        Set m_encByte = CreateEncoder(ENCODINGMODE_EIGHT_BIT_BYTE)
-        Set m_encKanji = CreateEncoder(ENCODINGMODE_KANJI)
+        Set m_encNum = CreateEncoder(MODE_NUMERIC)
+        Set m_encAlpha = CreateEncoder(MODE_ALPHA_NUMERIC)
+        Set m_encByte = CreateEncoder(MODE_BYTE)
+        Set m_encKanji = CreateEncoder(MODE_KANJI)
 
         m_minVersion = 1
         m_maxVersion = maxVer
@@ -2988,15 +2909,15 @@ Class Symbols
             oldMode = m_currSymbol.CurrentEncodingMode
 
             Select Case oldMode
-                Case ENCODINGMODE_UNKNOWN
+                Case MODE_UNKNOWN
                     newMode = SelectInitialMode(s, i)
-                Case ENCODINGMODE_NUMERIC
+                Case MODE_NUMERIC
                     newMode = SelectModeWhileInNumericMode(s, i)
-                Case ENCODINGMODE_ALPHA_NUMERIC
+                Case MODE_ALPHA_NUMERIC
                     newMode = SelectModeWhileInAlphanumericMode(s, i)
-                Case ENCODINGMODE_EIGHT_BIT_BYTE
+                Case MODE_BYTE
                     newMode = SelectModeWhileInByteMode(s, i)
-                Case ENCODINGMODE_KANJI
+                Case MODE_KANJI
                     newMode = SelectInitialMode(s, i)
                 Case Else
                     Call Err.Raise(51)
@@ -3055,12 +2976,12 @@ Class Symbols
         ver = m_currSymbol.Version
 
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectInitialMode = ENCODINGMODE_KANJI
+            SelectInitialMode = MODE_KANJI
             Exit Function
         End If
 
         If m_encByte.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectInitialMode = ENCODINGMODE_EIGHT_BIT_BYTE
+            SelectInitialMode = MODE_BYTE
             Exit Function
         End If
 
@@ -3089,18 +3010,18 @@ Class Symbols
             If flg Then
                 If (startIndex + cnt) <= Len(s) Then
                     If m_encByte.InExclusiveSubset(Mid(s, startIndex + cnt, 1)) Then
-                        SelectInitialMode = ENCODINGMODE_EIGHT_BIT_BYTE
+                        SelectInitialMode = MODE_BYTE
                         Exit Function
                     Else
-                        SelectInitialMode = ENCODINGMODE_ALPHA_NUMERIC
+                        SelectInitialMode = MODE_ALPHA_NUMERIC
                         Exit Function
                     End If
                 Else
-                    SelectInitialMode = ENCODINGMODE_ALPHA_NUMERIC
+                    SelectInitialMode = MODE_ALPHA_NUMERIC
                     Exit Function
                 End If
             Else
-                SelectInitialMode = ENCODINGMODE_ALPHA_NUMERIC
+                SelectInitialMode = MODE_ALPHA_NUMERIC
                 Exit Function
             End If
         End If
@@ -3148,13 +3069,13 @@ Class Symbols
             End If
 
             If flg1 Then
-                SelectInitialMode = ENCODINGMODE_EIGHT_BIT_BYTE
+                SelectInitialMode = MODE_BYTE
                 Exit Function
             ElseIf flg2 Then
-                SelectInitialMode = ENCODINGMODE_ALPHA_NUMERIC
+                SelectInitialMode = MODE_ALPHA_NUMERIC
                 Exit Function
             Else
-                SelectInitialMode = ENCODINGMODE_NUMERIC
+                SelectInitialMode = MODE_NUMERIC
                 Exit Function
             End If
         End If
@@ -3164,21 +3085,21 @@ Class Symbols
 
     Private Function SelectModeWhileInNumericMode(ByRef s, ByVal startIndex)
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInNumericMode = ENCODINGMODE_KANJI
+            SelectModeWhileInNumericMode = MODE_KANJI
             Exit Function
         End If
 
         If m_encByte.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInNumericMode = ENCODINGMODE_EIGHT_BIT_BYTE
+            SelectModeWhileInNumericMode = MODE_BYTE
             Exit Function
         End If
 
         If m_encAlpha.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInNumericMode = ENCODINGMODE_ALPHA_NUMERIC
+            SelectModeWhileInNumericMode = MODE_ALPHA_NUMERIC
             Exit Function
         End If
 
-        SelectModeWhileInNumericMode = ENCODINGMODE_NUMERIC
+        SelectModeWhileInNumericMode = MODE_NUMERIC
     End Function
 
     Private Function SelectModeWhileInAlphanumericMode(ByRef s, ByVal startIndex)
@@ -3190,12 +3111,12 @@ Class Symbols
         ver = m_currSymbol.Version
 
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInAlphanumericMode = ENCODINGMODE_KANJI
+            SelectModeWhileInAlphanumericMode = MODE_KANJI
             Exit Function
         End If
 
         If m_encByte.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInAlphanumericMode = ENCODINGMODE_EIGHT_BIT_BYTE
+            SelectModeWhileInAlphanumericMode = MODE_BYTE
             Exit Function
         End If
 
@@ -3227,12 +3148,12 @@ Class Symbols
             End If
 
             If flg Then
-                SelectModeWhileInAlphanumericMode = ENCODINGMODE_NUMERIC
+                SelectModeWhileInAlphanumericMode = MODE_NUMERIC
                 Exit Function
             End If
         End If
 
-        SelectModeWhileInAlphanumericMode = ENCODINGMODE_ALPHA_NUMERIC
+        SelectModeWhileInAlphanumericMode = MODE_ALPHA_NUMERIC
     End Function
 
     Private Function SelectModeWhileInByteMode(ByRef s, ByVal startIndex)
@@ -3244,7 +3165,7 @@ Class Symbols
         ver = m_currSymbol.Version
 
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInByteMode = ENCODINGMODE_KANJI
+            SelectModeWhileInByteMode = MODE_KANJI
             Exit Function
         End If
 
@@ -3275,7 +3196,7 @@ Class Symbols
             End If
 
             If flg Then
-                SelectModeWhileInByteMode = ENCODINGMODE_NUMERIC
+                SelectModeWhileInByteMode = MODE_NUMERIC
                 Exit Function
             End If
         End If
@@ -3312,12 +3233,12 @@ Class Symbols
             End If
 
             If flg Then
-                SelectModeWhileInByteMode = ENCODINGMODE_ALPHA_NUMERIC
+                SelectModeWhileInByteMode = MODE_ALPHA_NUMERIC
                 Exit Function
             End If
         End If
 
-        SelectModeWhileInByteMode = ENCODINGMODE_EIGHT_BIT_BYTE
+        SelectModeWhileInByteMode = MODE_BYTE
     End Function
 
 End Class
@@ -3582,5 +3503,367 @@ Class RGBQUAD
     Public Property Get rgbReserved()
         rgbReserved = m_rgbReserved
     End Property
+
+End Class
+
+
+Class ColorCode_
+
+    Public Property Get BLACK()
+        BLACK = "#000000"
+    End Property
+
+    Public Property Get WHITE()
+        WHITE = "#FFFFFF"
+    End Property
+
+    Public Function IsWebColor(arg)
+        Dim re
+        Set re = CreateObject("VBScript.RegExp")
+        re.Pattern = "^#[0-9A-Fa-f]{6}$"
+        Dim ret
+        ret = re.Test(arg)
+        IsWebColor = ret
+    End Function
+
+    Public Function ToRGB(ByVal arg)
+        If Not IsWebColor(arg) Then Call Err.Raise(5)
+
+        Dim ret
+        ret = RGB(CInt("&h" & Mid(arg, 2, 2)), _
+                  CInt("&h" & Mid(arg, 4, 2)), _
+                  CInt("&h" & Mid(arg, 6, 2)))
+
+        ToRGB = ret
+    End Function
+
+End Class
+
+
+Class Point
+
+    Private m_x
+    Private m_y
+
+    Public Sub Init(ByVal x, ByVal y)
+        m_x = x
+        m_y = y
+    End Sub
+
+    Public Property Get x()
+        x = m_x
+    End Property
+    Public Property Let x(ByVal Value)
+        m_x = Value
+    End Property
+
+    Public Property Get y()
+        y = m_y
+    End Property
+    Public Property Let y(ByVal Value)
+        m_y = Value
+    End Property
+
+    Public Function Clone()
+        Dim ret
+        Set ret = New Point
+        Call ret.Init(x, y)
+    
+        Set Clone = ret
+    End Function
+
+    Public Function Equals(ByVal obj)
+        Equals = (x = obj.x) And (y = obj.y)
+    End Function
+
+End Class
+
+Class Graphics_
+
+    Public Function Build1bppDIB( _
+      ByRef bitmapData, ByVal pictWidth, ByVal pictHeight, ByVal foreRgb, ByVal backRgb)
+        Dim bfh
+        Set bfh = New BITMAPFILEHEADER
+        With bfh
+            .bfType = &H4D42
+            .bfSize = 62 + bitmapData.Size
+            .bfReserved1 = 0
+            .bfReserved2 = 0
+            .bfOffBits = 62
+        End With
+
+        Dim bih
+        Set bih = New BITMAPINFOHEADER
+        With bih
+            .biSize = 40
+            .biWidth = pictWidth
+            .biHeight = pictHeight
+            .biPlanes = 1
+            .biBitCount = 1
+            .biCompression = 0
+            .biSizeImage = 0
+            .biXPelsPerMeter = 0
+            .biYPelsPerMeter = 0
+            .biClrUsed = 0
+            .biClrImportant = 0
+        End With
+
+        Dim palette(1)
+        Set palette(0) = New RGBQUAD
+        Set palette(1) = New RGBQUAD
+
+        With palette(0)
+            .rgbBlue = (foreRgb And &HFF0000) \ 2 ^ 16
+            .rgbGreen = (foreRgb And &HFF00&) \ 2 ^ 8
+            .rgbRed = foreRgb And &HFF&
+            .rgbReserved = 0
+        End With
+
+        With palette(1)
+            .rgbBlue = (backRgb And &HFF0000) \ 2 ^ 16
+            .rgbGreen = (backRgb And &HFF00&) \ 2 ^ 8
+            .rgbRed = backRgb And &HFF&
+            .rgbReserved = 0
+        End With
+
+        Dim ret
+        Set ret = New BinaryWriter
+
+        With bfh
+            Call ret.Append(.bfType)
+            Call ret.Append(.bfSize)
+            Call ret.Append(.bfReserved1)
+            Call ret.Append(.bfReserved2)
+            Call ret.Append(.bfOffBits)
+        End With
+
+        With bih
+            Call ret.Append(.biSize)
+            Call ret.Append(.biWidth)
+            Call ret.Append(.biHeight)
+            Call ret.Append(.biPlanes)
+            Call ret.Append(.biBitCount)
+            Call ret.Append(.biCompression)
+            Call ret.Append(.biSizeImage)
+            Call ret.Append(.biXPelsPerMeter)
+            Call ret.Append(.biYPelsPerMeter)
+            Call ret.Append(.biClrUsed)
+            Call ret.Append(.biClrImportant)
+        End With
+
+        With palette(0)
+            Call ret.Append(.rgbBlue)
+            Call ret.Append(.rgbGreen)
+            Call ret.Append(.rgbRed)
+            Call ret.Append(.rgbReserved)
+        End With
+
+        With palette(1)
+            Call ret.Append(.rgbBlue)
+            Call ret.Append(.rgbGreen)
+            Call ret.Append(.rgbRed)
+            Call ret.Append(.rgbReserved)
+        End With
+
+        Call bitmapData.CopyTo(ret)
+
+        Set Build1bppDIB = ret
+    End Function
+
+    Public Function Build24bppDIB( _
+      ByRef bitmapData, ByVal pictWidth, ByVal pictHeight)
+        Dim bfh
+        Set bfh = New BITMAPFILEHEADER
+
+        With bfh
+            .bfType = &H4D42
+            .bfSize = 54 + bitmapData.Size
+            .bfReserved1 = 0
+            .bfReserved2 = 0
+            .bfOffBits = 54
+        End With
+
+        Dim bih
+        Set bih = New BITMAPINFOHEADER
+
+        With bih
+            .biSize = 40
+            .biWidth = pictWidth
+            .biHeight = pictHeight
+            .biPlanes = 1
+            .biBitCount = 24
+            .biCompression = 0
+            .biSizeImage = 0
+            .biXPelsPerMeter = 0
+            .biYPelsPerMeter = 0
+            .biClrUsed = 0
+            .biClrImportant = 0
+        End With
+
+        Dim ret
+        Set ret = New BinaryWriter
+
+        With bfh
+            Call ret.Append(.bfType)
+            Call ret.Append(.bfSize)
+            Call ret.Append(.bfReserved1)
+            Call ret.Append(.bfReserved2)
+            Call ret.Append(.bfOffBits)
+        End With
+
+        With bih
+            Call ret.Append(.biSize)
+            Call ret.Append(.biWidth)
+            Call ret.Append(.biHeight)
+            Call ret.Append(.biPlanes)
+            Call ret.Append(.biBitCount)
+            Call ret.Append(.biCompression)
+            Call ret.Append(.biSizeImage)
+            Call ret.Append(.biXPelsPerMeter)
+            Call ret.Append(.biYPelsPerMeter)
+            Call ret.Append(.biClrUsed)
+            Call ret.Append(.biClrImportant)
+        End With
+
+        Call bitmapData.CopyTo(ret)
+
+        Set Build24bppDIB = ret
+    End Function
+
+    Public Function FindContours(ByRef img)
+        Dim MAX_VALUE
+        MAX_VALUE = &H7FFFFFFF
+
+        Dim pths
+        Set pths = New List
+    
+        Dim st, dr
+        Dim x, y
+        Dim p
+        Dim pth
+
+        For y = 0 To UBound(img) - 1
+            For x = 0 To UBound(img(y)) - 1
+                If Not (img(y)(x) = MAX_VALUE) And _
+                    (img(y)(x) > 0 And img(y)(x + 1) <= 0) Then
+
+                    img(y)(x) = MAX_VALUE
+                    Set st = New Point
+                    Call st.Init(x, y)
+                    Set pth = New List
+                    Call pth.Add(st)
+
+                    dr = DIRECTION_UP
+                    Set p = st.Clone()
+                    p.y = p.y - 1
+
+                    Do
+                        Select Case dr
+                            Case DIRECTION_UP
+                                If img(p.y)(p.x) > 0 Then
+                                    img(p.y)(p.x) = MAX_VALUE
+
+                                    If img(p.y)(p.x + 1) <= 0 Then
+                                        Set p = p.Clone()
+                                        p.y = p.y - 1
+                                    Else
+                                        Call pth.Add(p)
+                                        dr = DIRECTION_RIGHT
+                                        Set p = p.Clone()
+                                        p.x = p.x + 1
+                                    End If
+                                Else
+                                    Set p = p.Clone()
+                                    p.y = p.y + 1
+                                    Call pth.Add(p)
+                            
+                                    dr = DIRECTION_LEFT
+                                    Set p = p.Clone()
+                                    p.x = p.x - 1
+                                End If
+
+                            Case DIRECTION_DOWN
+                                If img(p.y)(p.x) > 0 Then
+                                    img(p.y)(p.x) = MAX_VALUE
+
+                                    If img(p.y)(p.x - 1) <= 0 Then
+                                        Set p = p.Clone()
+                                        p.y = p.y + 1
+                                    Else
+                                        Call pth.Add(p)
+                                
+                                        dr = DIRECTION_LEFT
+                                        Set p = p.Clone()
+                                        p.x = p.x - 1
+                                    End If
+                                Else
+                                    Set p = p.Clone()
+                                    p.y = p.y - 1
+                                    Call pth.Add(p)
+                            
+                                    dr = DIRECTION_RIGHT
+                                    Set p = p.Clone()
+                                    p.x = p.x + 1
+                                End If
+
+                            Case DIRECTION_LEFT
+                                If img(p.y)(p.x) > 0 Then
+                                    img(p.y)(p.x) = MAX_VALUE
+
+                                    If img(p.y - 1)(p.x) <= 0 Then
+                                        Set p = p.Clone()
+                                        p.x = p.x - 1
+                                    Else
+                                        Call pth.Add(p)
+                                
+                                        dr = DIRECTION_UP
+                                        Set p = p.Clone()
+                                        p.y = p.y - 1
+                                    End If
+                                Else
+                                    Set p = p.Clone()
+                                    p.x = p.x + 1
+                                    Call pth.Add(p)
+                            
+                                    dr = DIRECTION_DOWN
+                                    Set p = p.Clone()
+                                    p.y = p.y + 1
+                                End If
+
+                            Case DIRECTION_RIGHT
+                                If img(p.y)(p.x) > 0 Then
+                                    img(p.y)(p.x) = MAX_VALUE
+
+                                    If img(p.y + 1)(p.x) <= 0 Then
+                                        Set p = p.Clone()
+                                        p.x = p.x + 1
+                                    Else
+                                        Call pth.Add(p)
+                                
+                                        dr = DIRECTION_DOWN
+                                        Set p = p.Clone()
+                                        p.y = p.y + 1
+                                    End If
+                                Else
+                                    Set p = p.Clone()
+                                    p.x = p.x - 1
+                                    Call pth.Add(p)
+                            
+                                    dr = DIRECTION_UP
+                                    Set p = p.Clone()
+                                    p.y = p.y - 1
+                                End If
+                        Case Else
+                            Call Err.Raise(51)
+                        End Select
+                    Loop While Not p.Equals(st)
+
+                    Call pths.Add(pth.Items())
+                End If
+            Next
+        Next
+
+        FindContours = pths.Items()
+    End Function
 
 End Class
