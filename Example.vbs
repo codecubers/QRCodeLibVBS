@@ -15,9 +15,9 @@ Public Sub Example1()
     Call sbls.AppendText("Hello World")
 
     ' 24bpp bitmap
-    Call sbls.Item(0).Save24bppDIB("qrcode.bmp", SCALE, FORE_COLOR, BACK_COLOR)
+'    Call sbls.Item(0).Save24bppDIB("qrcode.bmp", SCALE, FORE_COLOR, BACK_COLOR)
     ' 1bpp bitmap
-'    Call sbls.Item(0).Save1bppDIB("qrcode.bmp", SCALE, FORE_COLOR, BACK_COLOR)
+    Call sbls.Item(0).Save1bppDIB("qrcode.bmp", SCALE, FORE_COLOR, BACK_COLOR)
     ' SVG
 '    Call sbls.Item(0).SaveSvg("qrcode.svg", SCALE, FORE_COLOR)
 End Sub

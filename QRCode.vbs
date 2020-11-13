@@ -39,6 +39,8 @@ Private Const DIRECTION_DOWN = 1
 Private Const DIRECTION_LEFT = 2
 Private Const DIRECTION_RIGHT = 3
 
+Private Const MIN_MODULE_SIZE = 2
+
 Private AlignmentPattern:     Set AlignmentPattern = New AlignmentPattern_
 Private CharCountIndicator:   Set CharCountIndicator = New CharCountIndicator_
 Private Codeword:             Set Codeword = New Codeword_
@@ -169,7 +171,7 @@ Private Function GetParams(ByVal args)
         Exit Function
     End If
 
-    If params("scale") < 2 Then
+    If params("scale") < MIN_MODULE_SIZE Then
         Call WScript.Echo("argument error 'scale'")
         Exit Function
     End If
@@ -201,8 +203,16 @@ Private Function GetParams(ByVal args)
     Set GetParams = params
 End Function
 
-Public Function CreateSymbols( _
-  ByVal ecLevel, ByVal maxVer, ByVal allowStructuredAppend)
+Public Function CreateSymbols(ByVal ecLevel, ByVal maxVer, ByVal allowStructuredAppend)
+    Select Case ecLevel
+        Case ECR_L ,ECR_M, ECR_Q, ECR_H
+            ' NOP
+        Case Else
+            Call Err.Raise(5)
+    End Select
+
+    If Not (1 <= maxVer And maxVer <= 40) Then Call Err.Raise(5)
+
     Dim ret
     Set ret = New Symbols
     Call ret.Init(ecLevel, maxVer, allowStructuredAppend)
@@ -2687,10 +2697,12 @@ Class Symbol
     End Function
 
     Public Sub Save1bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRgb, ByVal backRgb)
-        If Len(filePath) = 0 Then Call Err.Raise(5)
-        If Not(0 < moduleSize And moduleSize < 32) Then Call Err.Raise(5)
-
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
+
+        If Len(filePath) = 0 Then Call Err.Raise(5)
+        If moduleSize < MIN_MODULE_SIZE Then Call Err.Raise(5)
+        If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
+        If ColorCode.IsWebColor(backRgb) = False Then Call Err.Raise(5)
 
         Dim dib
         Set dib = GetBitmap1bpp(moduleSize, foreRgb, backRgb)
@@ -2699,11 +2711,13 @@ Class Symbol
     End Sub
 
     Public Sub Save24bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRgb, ByVal backRgb)
-        If Len(filePath) = 0 Then Call Err.Raise(5)
-        If moduleSize < 1 Then Call Err.Raise(5)
-
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
-
+        
+        If Len(filePath) = 0 Then Call Err.Raise(5)
+        If moduleSize < MIN_MODULE_SIZE Then Call Err.Raise(5)
+        If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
+        If ColorCode.IsWebColor(backRgb) = False Then Call Err.Raise(5)
+        
         Dim dib
         Set dib = GetBitmap24bpp(moduleSize, foreRgb, backRgb)
 
@@ -2714,7 +2728,7 @@ Class Symbol
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
 
         If Len(filePath) = 0 Then Call Err.Raise(5)
-        If moduleSize < 2 Then Call Err.Raise(5)
+        If moduleSize < MIN_MODULE_SIZE Then Call Err.Raise(5)
         If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
 
         Dim svg
@@ -2737,7 +2751,7 @@ Class Symbol
     Public Function GetSvg(ByVal moduleSize, ByVal foreRgb)
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
 
-        If moduleSize < 2 Then Call Err.Raise(5)
+        If moduleSize < MIN_MODULE_SIZE Then Call Err.Raise(5)
         If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
 
         Dim moduleMatrix
@@ -2753,11 +2767,9 @@ Class Symbol
         ReDim img(imageHeight - 1)
 
         Dim imgRow()
-
         Dim r, c
         Dim i, j
         Dim v
-        Dim vl
 
         r = 0
         Dim rowArray
