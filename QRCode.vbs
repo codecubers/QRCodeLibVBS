@@ -345,9 +345,19 @@ End Class
 
 Class AlphanumericEncoder
 
-    Private m_data()
+    Private m_data
     Private m_charCounter
     Private m_bitCounter
+    
+    Private m_encNumeric
+    
+    Private Sub Class_Initialize()
+        m_data = Empty
+        m_charCounter = 0
+        m_bitCounter = 0
+
+        Set m_encNumeric = New NumericEncoder
+    End Sub
 
     Public Property Get BitCount()
         BitCount = m_bitCounter
@@ -369,8 +379,6 @@ Class AlphanumericEncoder
         Dim wd
         wd = ConvertCharCode(c)
 
-        Dim ret
-
         If m_charCounter Mod 2 = 0 Then
             If m_charCounter = 0 Then
                 ReDim m_data(0)
@@ -379,15 +387,15 @@ Class AlphanumericEncoder
             End If
 
             m_data(UBound(m_data)) = wd
-            ret = 6
         Else
             m_data(UBound(m_data)) = m_data(UBound(m_data)) * 45
             m_data(UBound(m_data)) = m_data(UBound(m_data)) + wd
-            ret = 5
         End If
 
-        m_charCounter = m_charCounter + 1
+        Dim ret
+        ret = GetCodewordBitLength(c)
         m_bitCounter = m_bitCounter + ret
+        m_charCounter = m_charCounter + 1
 
         Append = ret
     End Function
@@ -421,6 +429,39 @@ Class AlphanumericEncoder
         Call bs.Append(m_data(UBound(m_data)), bitLength)
 
         GetBytes = bs.GetBytes()
+    End Function
+
+    Public Function ConvertCharCode(ByVal c)
+        Dim code
+        code = Asc(c)
+
+        ' A - Z
+        If 65 <= code And code <= 90 Then
+            ConvertCharCode = code - 55
+        ' 0 - 9
+        ElseIf 48 <= code And code <= 57 Then
+            ConvertCharCode = code - 48
+        ' (Space)
+        ElseIf code = 32 Then
+            ConvertCharCode = 36
+        ' $ %
+        ElseIf code = 36 Or code = 37 Then
+            ConvertCharCode = code + 1
+        ' * +
+        ElseIf code = 42 Or code = 43 Then
+            ConvertCharCode = code - 3
+        ' - .
+        ElseIf code = 45 Or code = 46 Then
+            ConvertCharCode = code - 4
+        ' /
+        ElseIf code = 47 Then
+            ConvertCharCode = 43
+        ' :
+        ElseIf code = 58 Then
+            ConvertCharCode = 44
+        Else
+            ConvertCharCode = -1
+        End If
     End Function
 
     Public Function InSubset(ByVal c)
@@ -460,69 +501,11 @@ Class AlphanumericEncoder
     End Function
 
     Public Function InExclusiveSubset(ByVal c)
-        Dim ret
-        Dim code
-        code = Asc(c)
-
-        ' A - Z
-        If 65 <= code And code <= 90 Then
-            ret = True
-        ' (Space)
-        ElseIf code = 32 Then
-            ret = True
-        ' $ %
-        ElseIf code = 36 Or code = 37 Then
-            ret = True
-        ' * +
-        ElseIf code = 42 Or code = 43 Then
-            ret = True
-        ' - .
-        ElseIf code = 45 Or code = 46 Then
-            ret = True
-        ' /
-        ElseIf code = 47 Then
-            ret = True
-        ' :
-        ElseIf code = 58 Then
-            ret = True
-        Else
-            ret = False
+        If m_encNumeric.InSubset(c) Then
+            InExclusiveSubset = False
         End If
-
-        InExclusiveSubset = ret
-    End Function
-
-    Public Function ConvertCharCode(ByVal c)
-        Dim code
-        code = Asc(c)
-
-        ' A - Z
-        If 65 <= code And code <= 90 Then
-            ConvertCharCode = code - 55
-        ' 0 - 9
-        ElseIf 48 <= code And code <= 57 Then
-            ConvertCharCode = code - 48
-        ' (Space)
-        ElseIf code = 32 Then
-            ConvertCharCode = 36
-        ' $ %
-        ElseIf code = 36 Or code = 37 Then
-            ConvertCharCode = code + 1
-        ' * +
-        ElseIf code = 42 Or code = 43 Then
-            ConvertCharCode = code - 3
-        ' - .
-        ElseIf code = 45 Or code = 46 Then
-            ConvertCharCode = code - 4
-        ' /
-        ElseIf code = 47 Then
-            ConvertCharCode = 43
-        ' :
-        ElseIf code = 58 Then
-            ConvertCharCode = 44
-        Else
-            ConvertCharCode = -1
-        End If
+        
+        InExclusiveSubset = InSubset(c)
     End Function
 
 End Class
@@ -735,20 +718,12 @@ Class ByteEncoder
 
         Dim wd
         wd = Asc(c) And &HFFFF&
-
         m_data(UBound(m_data)) = wd
 
         Dim ret
-
-        If wd > &HFF Then
-            m_charCounter = m_charCounter + 2
-            ret = 16
-        Else
-            m_charCounter = m_charCounter + 1
-            ret = 8
-        End If
-
+        ret = GetCodewordBitLength(c)
         m_bitCounter = m_bitCounter + ret
+        m_charCounter = m_charCounter + (ret \ 8)
 
         Append = ret
     End Function
@@ -783,10 +758,7 @@ Class ByteEncoder
             Exit Function
         End If
 
-        If InSubset(c) Then
-            InExclusiveSubset = True
-            Exit Function
-        End If
+        InExclusiveSubset = InSubset(c)
     End Function
 
 End Class
@@ -1184,9 +1156,19 @@ End Class
 
 Class KanjiEncoder
 
-    Private m_data()
+    Private m_data
     Private m_charCounter
     Private m_bitCounter
+    
+    Private m_encAlpha
+    
+    Private Sub Class_Initialize()
+        m_data = Empty
+        m_charCounter = 0
+        m_bitCounter = 0
+
+        Set m_encAlpha = New AlphanumericEncoder
+    End Sub
 
     Public Property Get BitCount()
         BitCount = m_bitCounter
@@ -1225,10 +1207,12 @@ Class KanjiEncoder
 
         m_data(UBound(m_data)) = wd
 
+        Dim ret
+        ret = GetCodewordBitLength(c)
+        m_bitCounter = m_bitCounter + ret
         m_charCounter = m_charCounter + 1
-        m_bitCounter = m_bitCounter + 13
 
-        Append = 13
+        Append = ret
     End Function
 
     Public Function GetCodewordBitLength(ByVal c)
@@ -1258,12 +1242,17 @@ Class KanjiEncoder
            &HE040& <= code And code <= &HEBBF& Then
             InSubset = &H40& <= lsb And lsb <= &HFC& And _
                        &H7F& <> lsb
-        Else
-            InSubset = False
+            Exit Function
         End If
+        
+        InSubset = False
     End Function
 
     Public Function InExclusiveSubset(ByVal c)
+        If m_encAlpha.InSubset(c) Then
+            InExclusiveSubset = False
+        End If
+
         InExclusiveSubset = InSubset(c)
     End Function
 
@@ -1780,9 +1769,15 @@ End Class
 
 Class NumericEncoder
 
-    Private m_data()
+    Private m_data
     Private m_charCounter
     Private m_bitCounter
+
+    Private Sub Class_Initialize()
+        m_data = Empty
+        m_charCounter = 0
+        m_bitCounter = 0
+    End Sub
 
     Public Property Get BitCount()
         BitCount = m_bitCounter
@@ -1801,8 +1796,6 @@ Class NumericEncoder
     End Property
 
     Public Function Append(ByVal c)
-        Dim ret
-
         If m_charCounter Mod 3 = 0 Then
             If m_charCounter = 0 Then
                 ReDim m_data(0)
@@ -1811,14 +1804,14 @@ Class NumericEncoder
             End If
 
             m_data(UBound(m_data)) = CLng(c)
-            ret = 4
         Else
             m_data(UBound(m_data)) = m_data(UBound(m_data)) * 10 + CLng(c)
-            ret = 3
         End If
 
-        m_charCounter = m_charCounter + 1
+        Dim ret
+        ret = GetCodewordBitLength(c)
         m_bitCounter = m_bitCounter + ret
+        m_charCounter = m_charCounter + 1
 
         Append = ret
     End Function
@@ -1864,6 +1857,7 @@ End Class
 
 
 Class QuietZone_
+
     Private m_width
 
     Private Sub Class_Initialize()
@@ -2366,7 +2360,7 @@ Class Symbol
                        SYMBOLSEQUENCEINDICATOR_POSITION_LENGTH)
         Call bs.Append(m_parent.Count - 1, _
                        SYMBOLSEQUENCEINDICATOR_TOTAL_NUMBER_LENGTH)
-        Call bs.Append(m_parent.StructuredAppendParity, _
+        Call bs.Append(m_parent.Parity, _
                        STRUCTUREDAPPEND_PARITY_DATA_LENGTH)
     End Sub
 
@@ -2838,7 +2832,7 @@ Class Symbols
     Private m_structuredAppendAllowed
     Private m_byteModeCharsetName
 
-    Private m_structuredAppendParity
+    Private m_parity
 
     Private m_currSymbol
 
@@ -2864,7 +2858,7 @@ Class Symbols
         m_errorCorrectionLevel = ecLevel
         m_structuredAppendAllowed = allowStructuredAppend
 
-        m_structuredAppendParity = 0
+        m_parity = 0
 
         Set m_currSymbol = New Symbol
         Call m_currSymbol.Init(Me)
@@ -2883,8 +2877,8 @@ Class Symbols
         StructuredAppendAllowed = m_structuredAppendAllowed
     End Property
 
-    Public Property Get StructuredAppendParity()
-        StructuredAppendParity = m_structuredAppendParity
+    Public Property Get Parity()
+        Parity = m_parity
     End Property
 
     Public Property Get MinVersion()
@@ -2971,10 +2965,10 @@ Class Symbols
         lsb = code And &HFF&
 
         If msb > 0 Then
-            m_structuredAppendParity = m_structuredAppendParity Xor msb
+            m_parity = m_parity Xor msb
         End If
 
-        m_structuredAppendParity = m_structuredAppendParity Xor lsb
+        m_parity = m_parity Xor lsb
     End Sub
 
     Private Function SelectInitialMode(ByRef s, ByVal startIndex)
