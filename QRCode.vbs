@@ -435,14 +435,8 @@ Class AlphanumericEncoder
         Dim code
         code = Asc(c)
 
-        ' A - Z
-        If 65 <= code And code <= 90 Then
-            ConvertCharCode = code - 55
-        ' 0 - 9
-        ElseIf 48 <= code And code <= 57 Then
-            ConvertCharCode = code - 48
         ' (Space)
-        ElseIf code = 32 Then
+        If code = 32 Then
             ConvertCharCode = 36
         ' $ %
         ElseIf code = 36 Or code = 37 Then
@@ -456,53 +450,28 @@ Class AlphanumericEncoder
         ' /
         ElseIf code = 47 Then
             ConvertCharCode = 43
+        ' 0 - 9
+        ElseIf 48 <= code And code <= 57 Then
+            ConvertCharCode = code - 48
         ' :
         ElseIf code = 58 Then
             ConvertCharCode = 44
+        ' A - Z
+        ElseIf 65 <= code And code <= 90 Then
+            ConvertCharCode = code - 55
         Else
             ConvertCharCode = -1
         End If
     End Function
 
     Public Function InSubset(ByVal c)
-        Dim ret
-        Dim code
-        code = Asc(c)
-
-        ' A - Z
-        If 65 <= code And code <= 90 Then
-            ret = True
-        ' 0 - 9
-        ElseIf 48 <= code And code <= 57 Then
-            ret = True
-        ' (Space)
-        ElseIf code = 32 Then
-            ret = True
-        ' $ %
-        ElseIf code = 36 Or code = 37 Then
-            ret = True
-        ' * +
-        ElseIf code = 42 Or code = 43 Then
-            ret = True
-        ' - .
-        ElseIf code = 45 Or code = 46 Then
-            ret = True
-        ' /
-        ElseIf code = 47 Then
-            ret = True
-        ' :
-        ElseIf code = 58 Then
-            ret = True
-        Else
-            ret = False
-        End If
-
-        InSubset = ret
+        InSubset = ConvertCharCode(c) > -1
     End Function
 
     Public Function InExclusiveSubset(ByVal c)
         If m_encNumeric.InSubset(c) Then
             InExclusiveSubset = False
+            Exit Function
         End If
         
         InExclusiveSubset = InSubset(c)
@@ -3859,8 +3828,8 @@ Class Graphics_
                                     Set p = p.Clone()
                                     p.y = p.y - 1
                                 End If
-                        Case Else
-                            Call Err.Raise(51)
+                            Case Else
+                                Call Err.Raise(51)
                         End Select
                     Loop While Not p.Equals(st)
 
