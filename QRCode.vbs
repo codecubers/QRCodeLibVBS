@@ -41,6 +41,15 @@ Private Const DIRECTION_RIGHT = 3
 
 Private Const MIN_MODULE_SIZE = 2
 
+Private Const BLANK         = 0
+Private Const WORD          = 1
+Private Const ALIGNMENT_PTN = 2
+Private Const FINDER_PTN    = 3
+Private Const FORMAT_INFO   = 4
+Private Const SEPARATOR_PTN = 5
+Private Const TIMING_PTN    = 6
+Private Const VERSION_INFO  = 7
+
 Private AlignmentPattern:     Set AlignmentPattern = New AlignmentPattern_
 Private CharCountIndicator:   Set CharCountIndicator = New CharCountIndicator_
 Private Codeword:             Set Codeword = New Codeword_
@@ -239,6 +248,10 @@ Private Function CreateEncoder(ByVal encMode)
     Set CreateEncoder = ret
 End Function
 
+Private Function IsDark(ByVal arg)
+    IsDark = arg > BLANK
+End Function
+
 
 Class AlignmentPattern_
 
@@ -287,6 +300,9 @@ Class AlignmentPattern_
     End Sub
 
     Public Sub Place(ByVal ver, ByRef moduleMatrix())
+        Dim VAL
+        VAL = ALIGNMENT_PTN
+
         Dim centerArray
         centerArray = m_lst(ver)
 
@@ -306,35 +322,35 @@ Class AlignmentPattern_
                     i = 0 And j = maxIndex Or _
                     i = maxIndex And j = 0) = False Then
 
-                    moduleMatrix(r - 2)(c - 2) = 2
-                    moduleMatrix(r - 2)(c - 1) = 2
-                    moduleMatrix(r - 2)(c + 0) = 2
-                    moduleMatrix(r - 2)(c + 1) = 2
-                    moduleMatrix(r - 2)(c + 2) = 2
+                    moduleMatrix(r - 2)(c - 2) = VAL
+                    moduleMatrix(r - 2)(c - 1) = VAL
+                    moduleMatrix(r - 2)(c + 0) = VAL
+                    moduleMatrix(r - 2)(c + 1) = VAL
+                    moduleMatrix(r - 2)(c + 2) = VAL
 
-                    moduleMatrix(r - 1)(c - 2) = 2
-                    moduleMatrix(r - 1)(c - 1) = -2
-                    moduleMatrix(r - 1)(c + 0) = -2
-                    moduleMatrix(r - 1)(c + 1) = -2
-                    moduleMatrix(r - 1)(c + 2) = 2
+                    moduleMatrix(r - 1)(c - 2) = VAL
+                    moduleMatrix(r - 1)(c - 1) = -VAL
+                    moduleMatrix(r - 1)(c + 0) = -VAL
+                    moduleMatrix(r - 1)(c + 1) = -VAL
+                    moduleMatrix(r - 1)(c + 2) = VAL
 
-                    moduleMatrix(r + 0)(c - 2) = 2
-                    moduleMatrix(r + 0)(c - 1) = -2
-                    moduleMatrix(r + 0)(c + 0) = 2
-                    moduleMatrix(r + 0)(c + 1) = -2
-                    moduleMatrix(r + 0)(c + 2) = 2
+                    moduleMatrix(r + 0)(c - 2) = VAL
+                    moduleMatrix(r + 0)(c - 1) = -VAL
+                    moduleMatrix(r + 0)(c + 0) = VAL
+                    moduleMatrix(r + 0)(c + 1) = -VAL
+                    moduleMatrix(r + 0)(c + 2) = VAL
 
-                    moduleMatrix(r + 1)(c - 2) = 2
-                    moduleMatrix(r + 1)(c - 1) = -2
-                    moduleMatrix(r + 1)(c + 0) = -2
-                    moduleMatrix(r + 1)(c + 1) = -2
-                    moduleMatrix(r + 1)(c + 2) = 2
+                    moduleMatrix(r + 1)(c - 2) = VAL
+                    moduleMatrix(r + 1)(c - 1) = -VAL
+                    moduleMatrix(r + 1)(c + 0) = -VAL
+                    moduleMatrix(r + 1)(c + 1) = -VAL
+                    moduleMatrix(r + 1)(c + 2) = VAL
 
-                    moduleMatrix(r + 2)(c - 2) = 2
-                    moduleMatrix(r + 2)(c - 1) = 2
-                    moduleMatrix(r + 2)(c + 0) = 2
-                    moduleMatrix(r + 2)(c + 1) = 2
-                    moduleMatrix(r + 2)(c + 2) = 2
+                    moduleMatrix(r + 2)(c - 2) = VAL
+                    moduleMatrix(r + 2)(c - 1) = VAL
+                    moduleMatrix(r + 2)(c + 0) = VAL
+                    moduleMatrix(r + 2)(c + 1) = VAL
+                    moduleMatrix(r + 2)(c + 2) = VAL
                 End If
             Next
         Next
@@ -348,9 +364,9 @@ Class AlphanumericEncoder
     Private m_data
     Private m_charCounter
     Private m_bitCounter
-    
+
     Private m_encNumeric
-    
+
     Private Sub Class_Initialize()
         m_data = Empty
         m_charCounter = 0
@@ -473,7 +489,7 @@ Class AlphanumericEncoder
             InExclusiveSubset = False
             Exit Function
         End If
-        
+
         InExclusiveSubset = InSubset(c)
     End Function
 
@@ -860,14 +876,17 @@ Class FinderPattern_
     Private m_finderPattern
 
     Private Sub Class_Initialize()
+        Dim VAL
+        VAL = FINDER_PTN
+
         m_finderPattern = Array( _
-            Array(2,  2,  2,  2,  2,  2,  2), _
-            Array(2, -2, -2, -2, -2, -2,  2), _
-            Array(2, -2,  2,  2,  2, -2,  2), _
-            Array(2, -2,  2,  2,  2, -2,  2), _
-            Array(2, -2,  2,  2,  2, -2,  2), _
-            Array(2, -2, -2, -2, -2, -2,  2), _
-            Array(2,  2,  2,  2,  2,  2,  2) _
+            Array(VAL,  VAL,  VAL,  VAL,  VAL,  VAL,  VAL), _
+            Array(VAL, -VAL, -VAL, -VAL, -VAL, -VAL,  VAL), _
+            Array(VAL, -VAL,  VAL,  VAL,  VAL, -VAL,  VAL), _
+            Array(VAL, -VAL,  VAL,  VAL,  VAL, -VAL,  VAL), _
+            Array(VAL, -VAL,  VAL,  VAL,  VAL, -VAL,  VAL), _
+            Array(VAL, -VAL, -VAL, -VAL, -VAL, -VAL,  VAL), _
+            Array(VAL,  VAL,  VAL,  VAL,  VAL,  VAL,  VAL) _
         )
     End Sub
 
@@ -894,10 +913,12 @@ End Class
 
 Class FormatInfo_
 
+    Private VAL
     Private m_formatInfoValues
     Private m_formatInfoMaskArray
 
     Private Sub Class_Initialize()
+        VAL = FORMAT_INFO
         m_formatInfoValues = Array( _
                &H0&,  &H537&,  &HA6E&,  &HF59&, &H11EB&, &H14DC&, &H1B85&, &H1EB2&, &H23D6&, &H26E1&, _
             &H29B8&, &H2C8F&, &H323D&, &H370A&, &H3853&, &H3D64&, &H429B&, &H47AC&, &H48F5&, &H4DC2&, _
@@ -931,10 +952,10 @@ Class FormatInfo_
             End If
 
             If temp > 0 Then
-                v = 3
+                v = VAL
             Else
-                v = -3
-            End If
+                v = -VAL
+            End IF
 
             moduleMatrix(r1)(8) = v
             moduleMatrix(8)(c1) = v
@@ -961,9 +982,9 @@ Class FormatInfo_
             End If
 
             If temp > 0 Then
-                v = 3
+                v = VAL
             Else
-                v = -3
+                v = -VAL
             End IF
 
             moduleMatrix(r2)(8) = v
@@ -976,26 +997,28 @@ Class FormatInfo_
                 c2 = c2 - 1
             End If
         Next
+
+        moduleMatrix(UBound(moduleMatrix) - 7)(8) = VAL
     End Sub
 
     Public Sub PlaceTempBlank(ByRef moduleMatrix())
-        Dim numModulesPerSide
-        numModulesPerSide = UBound(moduleMatrix) + 1
-
         Dim i
         For i = 0 To 8
             If i <> 6 Then
-                moduleMatrix(8)(i) = -3
-                moduleMatrix(i)(8) = -3
+                moduleMatrix(8)(i) = -VAL
+                moduleMatrix(i)(8) = -VAL
             End If
         Next
 
-        For i = numModulesPerSide - 8 To numModulesPerSide - 1
-            moduleMatrix(8)(i) = -3
-            moduleMatrix(i)(8) = -3
+        Dim numModulesPerSide
+        numModulesPerSide = UBound(moduleMatrix) + 1
+
+        For i = UBound(moduleMatrix) - 7 To UBound(moduleMatrix)
+            moduleMatrix(8)(i) = -VAL
+            moduleMatrix(i)(8) = -VAL
         Next
 
-        moduleMatrix(numModulesPerSide - 8)(8) = 2
+        moduleMatrix(UBound(moduleMatrix) - 7)(8) = -VAL
     End Sub
 
     Private Function GetFormatInfoValue(ByVal ecLevel, ByVal maskPatternReference)
@@ -1128,9 +1151,9 @@ Class KanjiEncoder
     Private m_data
     Private m_charCounter
     Private m_bitCounter
-    
+
     Private m_encAlpha
-    
+
     Private Sub Class_Initialize()
         m_data = Empty
         m_charCounter = 0
@@ -1213,7 +1236,7 @@ Class KanjiEncoder
                        &H7F& <> lsb
             Exit Function
         End If
-        
+
         InSubset = False
     End Function
 
@@ -1309,7 +1332,7 @@ Class Masking_
 
         For r = 0 To UBound(moduleMatrix)
             For c = 0 To UBound(moduleMatrix(r))
-                If Abs(moduleMatrix(r)(c)) = 1 Then
+                If Abs(moduleMatrix(r)(c)) = WORD Then
                     If condition.Evaluate(r, c) Then
                         moduleMatrix(r)(c) = moduleMatrix(r)(c) * -1
                     End If
@@ -1463,7 +1486,7 @@ Class MaskingPenaltyScore_
             cnt = 1
 
             For i = 0 To UBound(rowArray) - 1
-                If (rowArray(i) > 0) = (rowArray(i + 1) > 0) Then
+                If IsDark(rowArray(i)) = IsDark(rowArray(i + 1)) Then
                     cnt = cnt + 1
                 Else
                     If cnt >= 5 Then
@@ -1484,20 +1507,16 @@ Class MaskingPenaltyScore_
 
     Private Function CalcBlockOfModulesInSameColor(ByRef moduleMatrix())
         Dim penalty
-        Dim isSameColor
         Dim r, c
         Dim temp
 
         For r = 0 To UBound(moduleMatrix) - 1
             For c = 0 To UBound(moduleMatrix(r)) - 1
-                temp = moduleMatrix(r)(c) > 0
-                isSameColor = True
+                temp = IsDark(moduleMatrix(r)(c))
 
-                isSameColor = isSameColor And (moduleMatrix(r + 0)(c + 1) > 0 = temp)
-                isSameColor = isSameColor And (moduleMatrix(r + 1)(c + 0) > 0 = temp)
-                isSameColor = isSameColor And (moduleMatrix(r + 1)(c + 1) > 0 = temp)
-
-                If isSameColor Then
+                If (IsDark(moduleMatrix(r + 0)(c + 1)) = temp) And _
+                   (IsDark(moduleMatrix(r + 1)(c + 0)) = temp) And _
+                   (IsDark(moduleMatrix(r + 1)(c + 1)) = temp) Then
                     penalty = penalty + 3
                 End If
             Next
@@ -1550,7 +1569,7 @@ Class MaskingPenaltyScore_
                     ' light ratio 1
                     cnt = 0
                     Do While i >= 0
-                        If rowArray(i) <= 0 Then
+                        If Not IsDark(rowArray(i)) Then
                             cnt = cnt + 1
                             i = i - 1
                         Else
@@ -1565,7 +1584,7 @@ Class MaskingPenaltyScore_
                     ' dark ratio 1
                     cnt = 0
                     Do While i >= 0
-                        If rowArray(i) > 0 Then
+                        If IsDark(rowArray(i)) Then
                             cnt = cnt + 1
                             i = i - 1
                         Else
@@ -1580,7 +1599,7 @@ Class MaskingPenaltyScore_
                     ' light ratio 4
                     cnt = 0
                     Do While i >= 0
-                        If rowArray(i) <= 0 Then
+                        If Not IsDark(rowArray(i)) Then
                             cnt = cnt + 1
                             i = i - 1
                         Else
@@ -1599,7 +1618,7 @@ Class MaskingPenaltyScore_
                     ' light ratio 1
                     cnt = 0
                     Do While i <= UBound(rowArray)
-                        If rowArray(i) <= 0 Then
+                        If Not IsDark(rowArray(i)) Then
                             cnt = cnt + 1
                             i = i + 1
                         Else
@@ -1614,7 +1633,7 @@ Class MaskingPenaltyScore_
                     ' dark ratio 1
                     cnt = 0
                     Do While i <= UBound(rowArray)
-                        If rowArray(i) > 0 Then
+                        If IsDark(rowArray(i)) Then
                             cnt = cnt + 1
                             i = i + 1
                         Else
@@ -1629,7 +1648,7 @@ Class MaskingPenaltyScore_
                     ' light ratio 4
                     cnt = 0
                     Do While i <= UBound(rowArray)
-                        If rowArray(i) <= 0 Then
+                        If Not IsDark(rowArray(i)) Then
                             cnt = cnt + 1
                             i = i + 1
                         Else
@@ -1658,12 +1677,12 @@ Class MaskingPenaltyScore_
         Dim s, i
 
         For i = 1 To UBound(arg) - 1
-            If arg(i) > 0 Then
-                If arg(i - 1) <= 0 Then
+            If IsDark(arg(i)) Then
+                If Not IsDark(arg(i - 1)) Then
                     s = i
                 End If
 
-                If arg(i + 1) <= 0 Then
+                If Not IsDark(arg(i + 1)) Then
                     If (i + 1 - s) Mod 3 = 0 Then
                         ReDim Preserve ret(UBound(ret) + 1)
                         ret(UBound(ret)) = Array(s, i)
@@ -1683,7 +1702,7 @@ Class MaskingPenaltyScore_
 
         For Each rowArray In moduleMatrix
             For Each v In rowArray
-                If v > 0 Then
+                If IsDark(v) Then
                     darkCount = darkCount + 1
                 End If
             Next
@@ -1692,12 +1711,14 @@ Class MaskingPenaltyScore_
         Dim numModules
         numModules = (UBound(moduleMatrix) + 1) ^ 2
 
-        Dim temp
-        temp = Int((darkCount / numModules * 100) + 1)
-        temp = Abs(temp - 50)
-        temp = (temp + 4) \ 5
+        Dim k
+        k = darkCount / numModules * 100
+        k = Abs(k - 50)
+        k = Int(k / 5)
+        Dim penalty
+        penalty = CInt(k) * 10
 
-        CalcProportionOfDarkModules = temp * 10
+        CalcProportionOfDarkModules = penalty
     End Function
 
     Private Function MatrixRotate90(ByRef arg())
@@ -1877,8 +1898,8 @@ Class RemainderBit_
 
         For r = 0 To UBound(moduleMatrix)
             For c = 0 To UBound(moduleMatrix(r))
-                If moduleMatrix(r)(c) = 0 Then
-                    moduleMatrix(r)(c) = -1
+                If moduleMatrix(r)(c) = BLANK Then
+                    moduleMatrix(r)(c) = -WORD
                 End If
             Next
         Next
@@ -1979,19 +2000,22 @@ End Class
 Class Separator_
 
     Public Sub Place(ByRef moduleMatrix())
+        DIM VAL
+        VAL = SEPARATOR_PTN
+
         Dim offset
         offset = UBound(moduleMatrix) - 7
 
         Dim i
         For i = 0 To 7
-             moduleMatrix(i)(7) = -2
-             moduleMatrix(7)(i) = -2
+             moduleMatrix(i)(7) = -VAL
+             moduleMatrix(7)(i) = -VAL
 
-             moduleMatrix(offset + i)(7) = -2
-             moduleMatrix(offset + 0)(i) = -2
+             moduleMatrix(offset + i)(7) = -VAL
+             moduleMatrix(offset + 0)(i) = -VAL
 
-             moduleMatrix(i)(offset + 0) = -2
-             moduleMatrix(7)(offset + i) = -2
+             moduleMatrix(i)(offset + 0) = -VAL
+             moduleMatrix(7)(offset + i) = -VAL
          Next
     End Sub
 
@@ -2461,11 +2485,11 @@ Class Symbol
             bitPos = 7
 
             Do While bitPos >= 0
-                If moduleMatrix(r)(c) = 0 Then
+                If moduleMatrix(r)(c) = BLANK Then
                     If (v And 2 ^ bitPos) > 0 Then
-                        moduleMatrix(r)(c) = 1
+                        moduleMatrix(r)(c) = WORD
                     Else
-                        moduleMatrix(r)(c) = -1
+                        moduleMatrix(r)(c) = -WORD
                     End If
 
                     bitPos = bitPos - 1
@@ -2558,12 +2582,15 @@ Class Symbol
             Call bs.Clear
 
             For Each v In moduleMatrix(r)
-                If v > 0 Then
+                If IsDark(v) Then
                     pixelColor = 0
                 Else
-                    pixelColor = (2 ^ moduleSize) - 1
+                    pixelColor = 1
                 End If
-                Call bs.Append(pixelColor, moduleSize)
+
+                For i = 1 To moduleSize
+                    Call bs.Append(pixelColor, 1)
+                Next
             Next
 
             Call bs.Append(0, pack8bit)
@@ -2629,7 +2656,7 @@ Class Symbol
             idx = 0
 
             For Each v In moduleMatrix(r)
-                If v > 0 Then
+                If IsDark(v) Then
                     colorRGB = foreRgb
                 Else
                     colorRGB = backRgb
@@ -2675,12 +2702,12 @@ Class Symbol
 
     Public Sub Save24bppDIB(ByVal filePath, ByVal moduleSize, ByVal foreRgb, ByVal backRgb)
         If m_dataBitCounter = 0 Then Call Err.Raise(51)
-        
+
         If Len(filePath) = 0 Then Call Err.Raise(5)
         If moduleSize < MIN_MODULE_SIZE Then Call Err.Raise(5)
         If ColorCode.IsWebColor(foreRgb) = False Then Call Err.Raise(5)
         If ColorCode.IsWebColor(backRgb) = False Then Call Err.Raise(5)
-        
+
         Dim dib
         Set dib = GetBitmap24bpp(moduleSize, foreRgb, backRgb)
 
@@ -2741,7 +2768,12 @@ Class Symbol
             c = 0
             For Each v In rowArray
                 For j = 1 To moduleSize
-                    imgRow(c) = v
+                    If IsDark(v) Then
+                        imgRow(c) = 1
+                    Else
+                        imgRow(c) = 0
+                    End If
+
                     c = c + 1
                 Next
             Next
@@ -2752,8 +2784,8 @@ Class Symbol
             Next
         Next
 
-        Dim paths
-        paths = Graphics.FindContours(img)
+        Dim gpPaths
+        gpPaths = Graphics.FindContours(img)
 
         Dim buf
         Set buf = New List
@@ -2761,14 +2793,14 @@ Class Symbol
         Dim indent
         indent = String(11, " ")
 
-        Dim pth
+        Dim gpPath
         Dim k
 
-        For Each pth In paths
+        For Each gpPath In gpPaths
             Call buf.Add(indent & "M ")
 
-            For k = 0 To UBound(pth)
-                Call buf.Add(CStr(pth(k).x) & "," & CStr(pth(k).y) & " ")
+            For k = 0 To UBound(gpPath)
+                Call buf.Add(CStr(gpPath(k).x) & "," & CStr(gpPath(k).y) & " ")
             Next
             Call buf.Add("Z" & vbNewLine)
         Next
@@ -2887,11 +2919,11 @@ Class Symbols
                 Case MODE_UNKNOWN
                     newMode = SelectInitialMode(s, i)
                 Case MODE_NUMERIC
-                    newMode = SelectModeWhileInNumericMode(s, i)
+                    newMode = SelectModeWhileInNumeric(s, i)
                 Case MODE_ALPHA_NUMERIC
-                    newMode = SelectModeWhileInAlphanumericMode(s, i)
+                    newMode = SelectModeWhileInAlphanumeric(s, i)
                 Case MODE_BYTE
-                    newMode = SelectModeWhileInByteMode(s, i)
+                    newMode = SelectModeWhileInByte(s, i)
                 Case MODE_KANJI
                     newMode = SelectInitialMode(s, i)
                 Case Else
@@ -2941,15 +2973,6 @@ Class Symbols
     End Sub
 
     Private Function SelectInitialMode(ByRef s, ByVal startIndex)
-        Dim cnt
-        Dim flg
-        Dim flg1
-        Dim flg2
-        Dim i
-
-        Dim ver
-        ver = m_currSymbol.Version
-
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
             SelectInitialMode = MODE_KANJI
             Exit Function
@@ -2961,142 +2984,160 @@ Class Symbols
         End If
 
         If m_encAlpha.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            cnt = 0
-            flg = False
-
-            For i = startIndex To Len(s)
-                If m_encAlpha.InExclusiveSubset(Mid(s, i, 1)) Then
-                    cnt = cnt + 1
-                Else
-                    Exit For
-                End If
-            Next
-
-            If 1 <= ver And ver <= 9 Then
-                flg = cnt < 6
-            ElseIf 10 <= ver And ver <= 26 Then
-                flg = cnt < 7
-            ElseIf 27 <= ver And ver <= 40 Then
-                flg = cnt < 8
-            Else
-                Call Err.Raise(51)
-            End If
-
-            If flg Then
-                If (startIndex + cnt) <= Len(s) Then
-                    If m_encByte.InExclusiveSubset(Mid(s, startIndex + cnt, 1)) Then
-                        SelectInitialMode = MODE_BYTE
-                        Exit Function
-                    Else
-                        SelectInitialMode = MODE_ALPHA_NUMERIC
-                        Exit Function
-                    End If
-                Else
-                    SelectInitialMode = MODE_ALPHA_NUMERIC
-                    Exit Function
-                End If
-            Else
-                SelectInitialMode = MODE_ALPHA_NUMERIC
-                Exit Function
-            End If
+            SelectInitialMode = SelectModeWhenInitialDataAlphaNumeric(s, startIndex)
+            Exit Function
         End If
 
         If m_encNum.InSubset(Mid(s, startIndex, 1)) Then
-            cnt = 0
-            flg1 = False
-            flg2 = False
-
-            For i = startIndex To Len(s)
-                If m_encNum.InSubset(Mid(s, i, 1)) Then
-                    cnt = cnt + 1
-                Else
-                    Exit For
-                End If
-            Next
-
-            If 1 <= ver And ver <= 9 Then
-                flg1 = cnt < 4
-                flg2 = cnt < 7
-            ElseIf 10 <= ver And ver <= 26 Then
-                flg1 = cnt < 4
-                flg2 = cnt < 8
-            ElseIf 27 <= ver And ver <= 40 Then
-                flg1 = cnt < 5
-                flg2 = cnt < 9
-            Else
-                Call Err.Raise(51)
-             End If
-
-            If flg1 Then
-                If (startIndex + cnt) <= Len(s) Then
-                    flg1 = m_encByte.InExclusiveSubset(Mid(s, startIndex + cnt, 1))
-                Else
-                    flg1 = False
-                End If
-            End If
-
-            If flg2 Then
-                If (startIndex + cnt) <= Len(s) Then
-                    flg2 = m_encAlpha.InExclusiveSubset(Mid(s, startIndex + cnt, 1))
-                Else
-                    flg2 = False
-                End If
-            End If
-
-            If flg1 Then
-                SelectInitialMode = MODE_BYTE
-                Exit Function
-            ElseIf flg2 Then
-                SelectInitialMode = MODE_ALPHA_NUMERIC
-                Exit Function
-            Else
-                SelectInitialMode = MODE_NUMERIC
-                Exit Function
-            End If
+            SelectInitialMode = SelectModeWhenInitialDataNumeric(s, startIndex)
+            Exit Function
         End If
 
         Call Err.Raise(51)
     End Function
 
-    Private Function SelectModeWhileInNumericMode(ByRef s, ByVal startIndex)
-        If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInNumericMode = MODE_KANJI
-            Exit Function
-        End If
-
-        If m_encByte.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInNumericMode = MODE_BYTE
-            Exit Function
-        End If
-
-        If m_encAlpha.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInNumericMode = MODE_ALPHA_NUMERIC
-            Exit Function
-        End If
-
-        SelectModeWhileInNumericMode = MODE_NUMERIC
-    End Function
-
-    Private Function SelectModeWhileInAlphanumericMode(ByRef s, ByVal startIndex)
+    Private Function SelectModeWhenInitialDataAlphaNumeric(ByRef s, ByVal startIndex)
         Dim cnt
-        Dim flg
+        cnt = 0
+
         Dim i
+
+        For i = startIndex To Len(s)
+            If m_encAlpha.InExclusiveSubset(Mid(s, i, 1)) Then
+                cnt = cnt + 1
+            Else
+                Exit For
+            End If
+        Next
+
+        Dim flg
+        flg = False
 
         Dim ver
         ver = m_currSymbol.Version
 
+        If 1 <= ver And ver <= 9 Then
+            flg = cnt < 6
+        ElseIf 10 <= ver And ver <= 26 Then
+            flg = cnt < 7
+        ElseIf 27 <= ver And ver <= 40 Then
+            flg = cnt < 8
+        Else
+            Call Err.Raise(51)
+        End If
+
+        If flg Then
+            If (startIndex + cnt) <= Len(s) Then
+                If m_encByte.InSubset(Mid(s, startIndex + cnt, 1)) Then
+                    SelectModeWhenInitialDataAlphaNumeric = MODE_BYTE
+                    Exit Function
+                End If
+            End If
+        End If
+
+        SelectModeWhenInitialDataAlphaNumeric = MODE_ALPHA_NUMERIC
+    End Function
+
+    Private Function SelectModeWhenInitialDataNumeric(ByRef s, ByVal startIndex)
+        Dim cnt
+        cnt = 0
+
+        Dim i
+
+        For i = startIndex To Len(s)
+            If m_encNum.InSubset(Mid(s, i, 1)) Then
+                cnt = cnt + 1
+            Else
+                Exit For
+            End If
+        Next
+
+        Dim flg
+
+        Dim ver
+        ver = m_currSymbol.Version
+
+        If 1 <= ver And ver <= 9 Then
+            flg = cnt < 4
+        ElseIf 10 <= ver And ver <= 26 Then
+            flg = cnt < 4
+        ElseIf 27 <= ver And ver <= 40 Then
+            flg = cnt < 5
+        Else
+            Call Err.Raise(51)
+        End If
+
+        If flg Then
+            If (startIndex + cnt) <= Len(s) Then
+                SelectModeWhenInitialDataNumeric = MODE_BYTE
+                Exit Function
+            End If
+        End If
+
+        If 1 <= ver And ver <= 9 Then
+            flg = cnt < 7
+        ElseIf 10 <= ver And ver <= 26 Then
+            flg = cnt < 8
+        ElseIf 27 <= ver And ver <= 40 Then
+            flg = cnt < 9
+        Else
+            Call Err.Raise(51)
+        End If
+
+        If flg Then
+            If (startIndex + cnt) <= Len(s) Then
+                SelectModeWhenInitialDataNumeric = MODE_ALPHA_NUMERIC
+                Exit Function
+            End If
+        End If
+
+        SelectModeWhenInitialDataNumeric = MODE_NUMERIC
+    End Function
+
+    Private Function SelectModeWhileInNumeric(ByRef s, ByVal startIndex)
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInAlphanumericMode = MODE_KANJI
+            SelectModeWhileInNumeric = MODE_KANJI
             Exit Function
         End If
 
         If m_encByte.InExclusiveSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInAlphanumericMode = MODE_BYTE
+            SelectModeWhileInNumeric = MODE_BYTE
             Exit Function
         End If
 
+        If m_encAlpha.InExclusiveSubset(Mid(s, startIndex, 1)) Then
+            SelectModeWhileInNumeric = MODE_ALPHA_NUMERIC
+            Exit Function
+        End If
+
+        SelectModeWhileInNumeric = MODE_NUMERIC
+    End Function
+
+    Private Function SelectModeWhileInAlphanumeric(ByRef s, ByVal startIndex)
+        If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
+            SelectModeWhileInAlphanumeric = MODE_KANJI
+            Exit Function
+        End If
+
+        If m_encByte.InExclusiveSubset(Mid(s, startIndex, 1)) Then
+            SelectModeWhileInAlphanumeric = MODE_BYTE
+            Exit Function
+        End If
+
+        If MustChangeAlphanumericToNumeric(s, startIndex) Then
+            SelectModeWhileInAlphanumeric = MODE_NUMERIC
+            Exit Function
+        End If
+
+        SelectModeWhileInAlphanumeric = MODE_ALPHA_NUMERIC
+    End Function
+
+    Private Function MustChangeAlphanumericToNumeric(ByRef s, ByVal startIndex)
+        Dim cnt
         cnt = 0
-        flg = False
+
+        Dim ret
+        ret = False
 
         For i = startIndex To Len(s)
             If Not m_encAlpha.InSubset(Mid(s, i, 1)) Then
@@ -3106,43 +3147,56 @@ Class Symbols
             If m_encNum.InSubset(Mid(s, i, 1)) Then
                 cnt = cnt + 1
             Else
-                flg = True
+                ret = True
                 Exit For
             End If
         Next
 
-        If flg Then
-            If 1 <= ver And ver <= 9 Then
-                flg = cnt >= 13
-            ElseIf 10 <= ver And ver <= 26 Then
-                flg = cnt >= 15
-            ElseIf 27 <= ver And ver <= 40 Then
-                flg = cnt >= 17
-            Else
-                Call Err.Raise(51)
-            End If
-
-            If flg Then
-                SelectModeWhileInAlphanumericMode = MODE_NUMERIC
-                Exit Function
-            End If
-        End If
-
-        SelectModeWhileInAlphanumericMode = MODE_ALPHA_NUMERIC
-    End Function
-
-    Private Function SelectModeWhileInByteMode(ByRef s, ByVal startIndex)
-        Dim cnt
-        Dim flg
-        Dim i
-
         Dim ver
         ver = m_currSymbol.Version
 
+        If ret Then
+            If 1 <= ver And ver <= 9 Then
+                ret = cnt >= 13
+            ElseIf 10 <= ver And ver <= 26 Then
+                ret = cnt >= 15
+            ElseIf 27 <= ver And ver <= 40 Then
+                ret = cnt >= 17
+            Else
+                Call Err.Raise(51)
+            End If
+        End If
+
+        MustChangeAlphanumericToNumeric = ret
+    End Function
+
+    Private Function SelectModeWhileInByte(ByRef s, ByVal startIndex)
         If m_encKanji.InSubset(Mid(s, startIndex, 1)) Then
-            SelectModeWhileInByteMode = MODE_KANJI
+            SelectModeWhileInByte = MODE_KANJI
             Exit Function
         End If
+
+        If MustChangeByteToNumeric(s, startIndex) Then
+            SelectModeWhileInByte = MODE_NUMERIC
+            Exit Function
+        End If
+
+        If MustChangeByteToAlphanumeric(s, startIndex) Then
+            SelectModeWhileInByte = MODE_ALPHA_NUMERIC
+            Exit Function
+        End If
+
+        SelectModeWhileInByte = MODE_BYTE
+    End Function
+
+    Private Function MustChangeByteToNumeric(ByRef s, ByVal startIndex)
+        Dim cnt
+        cnt = 0
+
+        Dim ret
+        ret = False
+
+        Dim i
 
         For i = startIndex To Len(s)
             If Not m_encByte.InSubset(Mid(s, i, 1)) Then
@@ -3152,32 +3206,38 @@ Class Symbols
             If m_encNum.InSubset(Mid(s, i, 1)) Then
                 cnt = cnt + 1
             ElseIf m_encByte.InExclusiveSubset(Mid(s, i, 1)) Then
-                flg = True
+                ret = True
                 Exit For
             Else
                 Exit For
             End If
         Next
 
-        If flg Then
+        Dim ver
+        ver = m_currSymbol.Version
+
+        If ret Then
             If 1 <= ver And ver <= 9 Then
-                flg = cnt >= 6
+                ret = cnt >= 6
             ElseIf 10 <= ver And ver <= 26 Then
-                flg = cnt >= 8
+                ret = cnt >= 8
             ElseIf 27 <= ver And ver <= 40 Then
-                flg = cnt >= 9
+                ret = cnt >= 9
             Else
                 Call Err.Raise(51)
             End If
-
-            If flg Then
-                SelectModeWhileInByteMode = MODE_NUMERIC
-                Exit Function
-            End If
         End If
 
+        MustChangeByteToNumeric = ret
+    End Function
+
+    Private Function MustChangeByteToAlphanumeric(ByRef s, ByVal startIndex)
+        Dim ret
+
+        Dim cnt
         cnt = 0
-        flg = False
+
+        Dim i
 
         For i = startIndex To Len(s)
             If Not m_encByte.InSubset(Mid(s, i, 1)) Then
@@ -3187,33 +3247,29 @@ Class Symbols
             If m_encAlpha.InExclusiveSubset(Mid(s, i, 1)) Then
                 cnt = cnt + 1
             ElseIf m_encByte.InExclusiveSubset(Mid(s, i, 1)) Then
-                flg = True
+                ret = True
                 Exit For
             Else
                 Exit For
             End If
-
-            i = i + 1
         Next
 
-        If flg Then
+        Dim ver
+        ver = m_currSymbol.Version
+
+        If ret Then
             If 1 <= ver And ver <= 9 Then
-                flg = cnt >= 11
+                ret = cnt >= 11
             ElseIf 10 <= ver And ver <= 26 Then
-                flg = cnt >= 15
+                ret = cnt >= 15
             ElseIf 27 <= ver And ver <= 40 Then
-                flg = cnt >= 16
+                ret = cnt >= 16
             Else
                 Call Err.Raise(51)
             End If
-
-            If flg Then
-                SelectModeWhileInByteMode = MODE_ALPHA_NUMERIC
-                Exit Function
-            End If
         End If
 
-        SelectModeWhileInByteMode = MODE_BYTE
+        MustChangeByteToAlphanumeric = ret
     End Function
 
 End Class
@@ -3227,9 +3283,9 @@ Class TimingPattern_
 
         For i = 8 To UBound(moduleMatrix) - 8
             If i Mod 2 = 0 Then
-                v = 2
+                v = TIMING_PTN
             Else
-                v = -2
+                v = -TIMING_PTN
             End If
 
             moduleMatrix(6)(i) = v
@@ -3273,10 +3329,10 @@ Class VersionInfo_
 
         For i = 0 To 17
             If (versionInfoValue And 2 ^ i) > 0 Then
-                v = 3
+                v = VERSION_INFO
             Else
-                v = -3
-            End If
+                v = -VERSION_INFO
+            End IF
 
             moduleMatrix(p1)(p2) = v
             moduleMatrix(p2)(p1) = v
@@ -3298,8 +3354,8 @@ Class VersionInfo_
 
         For i = 0 To 5
             For j = numModulesPerSide - 11 To numModulesPerSide - 9
-                moduleMatrix(i)(j) = -3
-                moduleMatrix(j)(i) = -3
+                moduleMatrix(i)(j) = -VERSION_INFO
+                moduleMatrix(j)(i) = -VERSION_INFO
             Next
         Next
     End Sub
@@ -3553,6 +3609,7 @@ Class Point
 
 End Class
 
+
 Class Graphics_
 
     Public Function Build1bppDIB( _
@@ -3709,13 +3766,13 @@ Class Graphics_
         Dim MAX_VALUE
         MAX_VALUE = &H7FFFFFFF
 
-        Dim pths
-        Set pths = New List
+        Dim gpPaths
+        Set gpPaths = New List
 
         Dim st, dr
         Dim x, y
         Dim p
-        Dim pth
+        Dim gpPath
 
         For y = 0 To UBound(img) - 1
             For x = 0 To UBound(img(y)) - 1
@@ -3725,8 +3782,8 @@ Class Graphics_
                     img(y)(x) = MAX_VALUE
                     Set st = New Point
                     Call st.Init(x, y)
-                    Set pth = New List
-                    Call pth.Add(st)
+                    Set gpPath = New List
+                    Call gpPath.Add(st)
 
                     dr = DIRECTION_UP
                     Set p = st.Clone()
@@ -3742,7 +3799,7 @@ Class Graphics_
                                         Set p = p.Clone()
                                         p.y = p.y - 1
                                     Else
-                                        Call pth.Add(p)
+                                        Call gpPath.Add(p)
                                         dr = DIRECTION_RIGHT
                                         Set p = p.Clone()
                                         p.x = p.x + 1
@@ -3750,7 +3807,7 @@ Class Graphics_
                                 Else
                                     Set p = p.Clone()
                                     p.y = p.y + 1
-                                    Call pth.Add(p)
+                                    Call gpPath.Add(p)
 
                                     dr = DIRECTION_LEFT
                                     Set p = p.Clone()
@@ -3765,7 +3822,7 @@ Class Graphics_
                                         Set p = p.Clone()
                                         p.y = p.y + 1
                                     Else
-                                        Call pth.Add(p)
+                                        Call gpPath.Add(p)
 
                                         dr = DIRECTION_LEFT
                                         Set p = p.Clone()
@@ -3774,7 +3831,7 @@ Class Graphics_
                                 Else
                                     Set p = p.Clone()
                                     p.y = p.y - 1
-                                    Call pth.Add(p)
+                                    Call gpPath.Add(p)
 
                                     dr = DIRECTION_RIGHT
                                     Set p = p.Clone()
@@ -3789,7 +3846,7 @@ Class Graphics_
                                         Set p = p.Clone()
                                         p.x = p.x - 1
                                     Else
-                                        Call pth.Add(p)
+                                        Call gpPath.Add(p)
 
                                         dr = DIRECTION_UP
                                         Set p = p.Clone()
@@ -3798,7 +3855,7 @@ Class Graphics_
                                 Else
                                     Set p = p.Clone()
                                     p.x = p.x + 1
-                                    Call pth.Add(p)
+                                    Call gpPath.Add(p)
 
                                     dr = DIRECTION_DOWN
                                     Set p = p.Clone()
@@ -3813,7 +3870,7 @@ Class Graphics_
                                         Set p = p.Clone()
                                         p.x = p.x + 1
                                     Else
-                                        Call pth.Add(p)
+                                        Call gpPath.Add(p)
 
                                         dr = DIRECTION_DOWN
                                         Set p = p.Clone()
@@ -3822,7 +3879,7 @@ Class Graphics_
                                 Else
                                     Set p = p.Clone()
                                     p.x = p.x - 1
-                                    Call pth.Add(p)
+                                    Call gpPath.Add(p)
 
                                     dr = DIRECTION_UP
                                     Set p = p.Clone()
@@ -3833,12 +3890,12 @@ Class Graphics_
                         End Select
                     Loop While Not p.Equals(st)
 
-                    Call pths.Add(pth.Items())
+                    Call gpPaths.Add(gpPath.Items())
                 End If
             Next
         Next
 
-        FindContours = pths.Items()
+        FindContours = gpPaths.Items()
     End Function
 
 End Class
