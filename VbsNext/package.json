@@ -1,0 +1,32 @@
+{
+  "name": "@vbsnext/vbs-qrcode",
+  "version": "1.0.0",
+  "description": "QRCode generator using pure vbscript using vbsnext framework",
+  "main": "QRCode.vbs",
+  "scripts": {
+    "units" : "test\\UnitTests.bat",
+    "test": "test\\Tests.bat && test\\UnitTests.bat",
+    "build": "npx vbsnext QRCode.vbs"
+  },
+  "bin": {
+    "qrcode": "QRCode.cmd"
+  },
+  "keywords": [],
+  "author": "Praveen Kumar Nandagiri, yas78",
+  "license": "ISC",
+  "dependencies": {},
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "@vbsnext/vbsnext-core": "^1.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codecubers/QRCodeLibVBS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codecubers/QRCodeLibVBS/issues"
+  },
+  "homepage": "https://github.com/codecubers/QRCodeLibVBS#readme"
+}

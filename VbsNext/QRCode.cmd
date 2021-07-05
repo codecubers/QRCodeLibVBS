@@ -1,0 +1,1 @@
+CScript.exe //nologo build\QRCode-bundle.vbs %*
